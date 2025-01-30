@@ -1,3 +1,9 @@
+### Project Origin
+
+This project is a fork of [ESP32_LogicAnalyzer](https://github.com/EUA/ESP32_LogicAnalyzer), created by [Erdem U. Altinyurt](https://github.com/EUA).
+
+----
+
 ESP32 LogicAnalyzer
 A *SUMP* compatible 16Bit Logic Analyzer for ESP32 MCUs.
 
