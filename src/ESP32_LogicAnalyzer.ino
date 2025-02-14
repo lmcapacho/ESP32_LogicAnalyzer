@@ -57,7 +57,7 @@ void setup(void) {
   
   cfg.gpio_bus[8]  = 18;//GPIO8 used for SDI, bootloop
   cfg.gpio_bus[9]  = 19;//GPIO9 lead SW_CPU_RESET on WROOVER module
-  cfg.gpio_bus[10] = 20;//GPI10 lead SW_CPU_RESET on WROOVER module
+  cfg.gpio_bus[10] = 25;//GPI10 lead SW_CPU_RESET on WROOVER module
   cfg.gpio_bus[11] = 21;//GPIO11 used for CMD, bootloop
   cfg.gpio_bus[12] = 12;
   cfg.gpio_bus[13] = 13;
@@ -67,7 +67,7 @@ void setup(void) {
   cfg.gpio_clk_out= 22; // Pin22 used for LedC output
   cfg.gpio_clk_in = 23; // Pin23 used for XCK input from LedC
   
-  //GPIO 24,28,29,30,31 results bootloop
+  //GPIO 20,24,28,29,30,31 results bootloop
     
   //cfg.bits = I2S_PARALLEL_BITS_8; //not implemented yet...
   cfg.bits = I2S_PARALLEL_BITS_16;
