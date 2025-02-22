@@ -45,7 +45,7 @@ static const char* TAG = "esp32la";
 //#define CAPTURE_SIZE 12000
 #define rle_size 96000
 
-#define ledPin 21 //Led on while running and Blinks while transfering data.
+#define ledPin 2 //Led on while running and Blinks while transfering data.
 
 uint32_t time_debug_indice_dma[10];
 uint16_t time_debug_indice_dma_p=0;
