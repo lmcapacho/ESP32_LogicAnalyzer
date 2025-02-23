@@ -7,7 +7,7 @@ This project is a fork of [ESP32_LogicAnalyzer](https://github.com/EUA/ESP32_Log
 ESP32 LogicAnalyzer
 A *SUMP* compatible 16Bit Logic Analyzer for ESP32 MCUs.
 
-![PulseView](/ESP32_LogicAnalyzer_in_PulseView.png)
+![PulseView](/docs/images/ESP32_LogicAnalyzer_in_PulseView.png)
 
 * Use Arduino to compile and flash your ESP32.
 * Uses **ESP32 I2S DMA** and could capture speeds up to **20 Mhz**.
