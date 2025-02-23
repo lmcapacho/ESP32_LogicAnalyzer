@@ -46,23 +46,32 @@ void setup(void) {
 
   dma_desc_init(CAPTURE_SIZE);
 
-  cfg.gpio_bus[0]  = 0;
-  cfg.gpio_bus[1]  = 32;//GPIO01 used for UART 0 RX, able to use it if you select different UART port (1,2) as OLS_Port
-  cfg.gpio_bus[2]  = 2;
-  cfg.gpio_bus[3]  = 33;//GPIO03 used for UART 0 TX
-  cfg.gpio_bus[4]  = 4;
-  cfg.gpio_bus[5]  = 5;
-  cfg.gpio_bus[6]  = 26; //GPIO06 used for SCK, bootloop, //GPIO16 is UART2 RX 
-  cfg.gpio_bus[7]  = 27; //GPIO07 used for SDO, bootloop  //GPIO17 is UART2 TX
+  //GPIO01 used for UART 0 RX, able to use it if you select different UART port (1,2) as OLS_Port
+  //GPIO03 used for UART 0 TX
+  //GPIO06 used for SCK, bootloop, //GPIO16 is UART2 RX 
+  //GPIO07 used for SDO, bootloop  //GPIO17 is UART2 TX
+  //GPIO8 used for SDI, bootloop
+  //GPIO9 lead SW_CPU_RESET on WROOVER module
+  //GPI10 lead SW_CPU_RESET on WROOVER module
+  //GPIO11 used for CMD, bootloop
   
-  cfg.gpio_bus[8]  = 18;//GPIO8 used for SDI, bootloop
-  cfg.gpio_bus[9]  = 19;//GPIO9 lead SW_CPU_RESET on WROOVER module
-  cfg.gpio_bus[10] = 25;//GPI10 lead SW_CPU_RESET on WROOVER module
-  cfg.gpio_bus[11] = 21;//GPIO11 used for CMD, bootloop
-  cfg.gpio_bus[12] = 12;
-  cfg.gpio_bus[13] = 13;
-  cfg.gpio_bus[14] = 14;
-  cfg.gpio_bus[15] = 15;
+  cfg.gpio_bus[0]  = 15;  // CH0
+  cfg.gpio_bus[1]  = 4;   // CH1
+  cfg.gpio_bus[2]  = 5;   // CH2
+  cfg.gpio_bus[3]  = 18;  // CH3
+  cfg.gpio_bus[4]  = 19;  // CH4
+  cfg.gpio_bus[5]  = 21;  // CH5
+  cfg.gpio_bus[6]  = 13;  // CH6
+  cfg.gpio_bus[7]  = 12;  // CH7
+  
+  cfg.gpio_bus[8]  = 14;  // CH8
+  cfg.gpio_bus[9]  = 27;  // CH9
+  cfg.gpio_bus[10] = 26;  // CH10
+  cfg.gpio_bus[11] = 25;  // CH11
+  cfg.gpio_bus[12] = 33;  // CH12
+  cfg.gpio_bus[13] = 32;  // CH13
+  cfg.gpio_bus[14] = 35;  // CH14
+  cfg.gpio_bus[15] = 34;  // CH15
   
   cfg.gpio_clk_out= 22; // Pin22 used for LedC output
   cfg.gpio_clk_in = 23; // Pin23 used for XCK input from LedC
