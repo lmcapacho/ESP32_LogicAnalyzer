@@ -31,9 +31,6 @@
 i2s_parallel_buffer_desc_t bufdesc;
 i2s_parallel_config_t cfg;
 
-int cmdByte = 0;
-byte cmdBytes[5];
-
 void setup(void) {
   begin();
 }
@@ -43,7 +40,7 @@ void loop()
   vTaskDelay(1); //To avoid WDT
   
   if (OLS_Port.available() > 0) {
-    cmdByte = OLS_Port.read();
+    int cmdByte = OLS_Port.read();
     handleCommand(cmdByte);    
   }
 }
@@ -112,6 +109,8 @@ void handleCommand(int cmdByte) {
   #endif
   
   int chan_num = 0;
+  byte cmdBytes[4];
+
   switch (cmdByte) {
     case SUMP_RESET:
       break;
@@ -123,7 +122,7 @@ void handleCommand(int cmdByte) {
       captureMilli();
       break;
     case SUMP_TRIGGER_MASK_CH_A:
-      getCmd();
+      getCmd(cmdBytes);
       trigger = ((uint16_t)cmdBytes[1] << 8 ) | cmdBytes[0];
       #ifdef _DEBUG_MODE_
       if (trigger) {
@@ -136,7 +135,7 @@ void handleCommand(int cmdByte) {
       #endif
       break;
     case SUMP_TRIGGER_VALUES_CH_A:
-      getCmd();
+      getCmd(cmdBytes);
 
       trigger_values = ((uint16_t)cmdBytes[1] << 8 ) | cmdBytes[0];
       #ifdef _DEBUG_MODE_
@@ -160,7 +159,7 @@ void handleCommand(int cmdByte) {
     case SUMP_TRIGGER_CONFIG_CH_B:
     case SUMP_TRIGGER_CONFIG_CH_C:
     case SUMP_TRIGGER_CONFIG_CH_D:
-      getCmd();
+      getCmd(cmdBytes);
       /*
           No config support
       */
@@ -170,7 +169,7 @@ void handleCommand(int cmdByte) {
             the shifting needs to be done on the 32bit unsigned long variable
           so that << 16 doesn't end up as zero.
       */
-      getCmd();
+      getCmd(cmdBytes);
       divider = cmdBytes[2];
       divider = divider << 8;
       divider += cmdBytes[1];
@@ -179,7 +178,7 @@ void handleCommand(int cmdByte) {
       setupDelay();
       break;
     case SUMP_SET_READ_DELAY_COUNT:
-      getCmd();
+      getCmd(cmdBytes);
       readCount = 4 * (((cmdBytes[1] << 8) | cmdBytes[0]) + 1);
       if (readCount > MAX_CAPTURE_SIZE)
         readCount = MAX_CAPTURE_SIZE;
@@ -189,7 +188,7 @@ void handleCommand(int cmdByte) {
       break;
 
     case SUMP_SET_FLAGS:
-      getCmd();
+      getCmd(cmdBytes);
       rleEnabled = cmdBytes[1] & 0x1;
       channels_to_read = (~(cmdBytes[0] >> 2) & 0x0F);
       
@@ -216,17 +215,16 @@ void handleCommand(int cmdByte) {
       #ifdef _DEBUG_MODE_
       Serial_Debug_Port.printf("Unrecognized cmd 0x%02X\r\n", cmdByte );
       #endif
-      getCmd();
+      getCmd(cmdBytes);
       break;
   }
 }
 
-void getCmd() {
+void getCmd(byte *cmdBytes) {
   delay(10);
-  cmdBytes[0] = OLS_Port.read();
-  cmdBytes[1] = OLS_Port.read();
-  cmdBytes[2] = OLS_Port.read();
-  cmdBytes[3] = OLS_Port.read();
+  for (int i = 0; i < 4; ++i) {
+    cmdBytes[i] = OLS_Port.read();
+  }
   #ifdef _DEBUG_MODE_
   Serial_Debug_Port.printf("CMDs ");
   for (int q = 0; q < 4; q++) {
