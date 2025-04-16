@@ -31,7 +31,29 @@
 i2s_parallel_buffer_desc_t bufdesc;
 i2s_parallel_config_t cfg;
 
+int cmdByte = 0;
+byte cmdBytes[5];
+
+void begin(void);
+void captureMilli(void);
+void getCmd(void);
+void get_metadata(void);
+
 void setup(void) {
+  begin();
+}
+
+void loop()
+{
+  vTaskDelay(1); //To avoid WDT
+  
+  if (OLS_Port.available() > 0) {
+    cmdByte = OLS_Port.read();
+    handleCommand(cmdByte);    
+  }
+}
+
+void begin(void) {
   #ifdef _DEBUG_MODE_
   Serial_Debug_Port.begin(Serial_Debug_Port_Baud);
   //Using for development
@@ -89,134 +111,118 @@ void setup(void) {
   i2s_parallel_setup(&cfg);
 }
 
-void captureMilli(void);
-void getCmd(void);
-void blinkled(void);
-void get_metadata(void);
-
-int cmdByte = 0;
-byte cmdBytes[5];
-
-void loop()
-{
-  vTaskDelay(1); //To avoid WDT
+void handleCommand(int cmdByte) {
+  #ifdef _DEBUG_MODE_
+  Serial_Debug_Port.printf("CMD: 0x%02X\r\n", cmdByte);
+  #endif
   
-  if (OLS_Port.available() > 0) {
-    //int z = OLS_Port.available();
-    cmdByte = OLS_Port.read();
-    
-    #ifdef _DEBUG_MODE_
-    Serial_Debug_Port.printf("CMD: 0x%02X\r\n", cmdByte);
-    #endif
-    
-    int chan_num = 0;
-    switch (cmdByte) {
-      case SUMP_RESET:
-        break;
-      case SUMP_QUERY:
-        OLS_Port.print(F("1ALS"));
-        //OLS_Port.print(F("1SLO"));
-        break;
-      case SUMP_ARM:
-        captureMilli();
-        break;
-      case SUMP_TRIGGER_MASK_CH_A:
-        getCmd();
-        trigger = ((uint16_t)cmdBytes[1] << 8 ) | cmdBytes[0];
-        #ifdef _DEBUG_MODE_
-        if (trigger) {
-          Serial_Debug_Port.printf("Trigger Set for inputs : ");
-          for ( int i = 0; i < 16 ; i++ )
-            if (( trigger >> i) & 0x1 )
-              Serial_Debug_Port.printf("%d,  ", i );
-          Serial_Debug_Port.println();
-        }
-        #endif
-        break;
-      case SUMP_TRIGGER_VALUES_CH_A:
-        getCmd();
+  int chan_num = 0;
+  switch (cmdByte) {
+    case SUMP_RESET:
+      break;
+    case SUMP_QUERY:
+      OLS_Port.print(F("1ALS"));
+      //OLS_Port.print(F("1SLO"));
+      break;
+    case SUMP_ARM:
+      captureMilli();
+      break;
+    case SUMP_TRIGGER_MASK_CH_A:
+      getCmd();
+      trigger = ((uint16_t)cmdBytes[1] << 8 ) | cmdBytes[0];
+      #ifdef _DEBUG_MODE_
+      if (trigger) {
+        Serial_Debug_Port.printf("Trigger Set for inputs : ");
+        for ( int i = 0; i < 16 ; i++ )
+          if (( trigger >> i) & 0x1 )
+            Serial_Debug_Port.printf("%d,  ", i );
+        Serial_Debug_Port.println();
+      }
+      #endif
+      break;
+    case SUMP_TRIGGER_VALUES_CH_A:
+      getCmd();
 
-        trigger_values = ((uint16_t)cmdBytes[1] << 8 ) | cmdBytes[0];
-        #ifdef _DEBUG_MODE_
-        if (trigger) {
-          Serial_Debug_Port.printf("Trigger Val for inputs : ");
-          for ( int i = 0; i < 16 ; i++ )
-            if (( trigger >> i) & 0x1 )
-              Serial_Debug_Port.printf("%C,  ", (( trigger_values >> i ) & 0x1 ? 'H' : 'L') );
-          Serial_Debug_Port.println();
-        }
-        #endif
-        break;
+      trigger_values = ((uint16_t)cmdBytes[1] << 8 ) | cmdBytes[0];
+      #ifdef _DEBUG_MODE_
+      if (trigger) {
+        Serial_Debug_Port.printf("Trigger Val for inputs : ");
+        for ( int i = 0; i < 16 ; i++ )
+          if (( trigger >> i) & 0x1 )
+            Serial_Debug_Port.printf("%C,  ", (( trigger_values >> i ) & 0x1 ? 'H' : 'L') );
+        Serial_Debug_Port.println();
+      }
+      #endif
+      break;
 
-      case SUMP_TRIGGER_MASK_CH_B:
-      case SUMP_TRIGGER_MASK_CH_C:
-      case SUMP_TRIGGER_MASK_CH_D:
-      case SUMP_TRIGGER_VALUES_CH_B:
-      case SUMP_TRIGGER_VALUES_CH_C:
-      case SUMP_TRIGGER_VALUES_CH_D:
-      case SUMP_TRIGGER_CONFIG_CH_A:
-      case SUMP_TRIGGER_CONFIG_CH_B:
-      case SUMP_TRIGGER_CONFIG_CH_C:
-      case SUMP_TRIGGER_CONFIG_CH_D:
-        getCmd();
-        /*
-           No config support
-        */
-        break;
-      case SUMP_SET_DIVIDER:
-        /*
-             the shifting needs to be done on the 32bit unsigned long variable
-           so that << 16 doesn't end up as zero.
-        */
-        getCmd();
-        divider = cmdBytes[2];
-        divider = divider << 8;
-        divider += cmdBytes[1];
-        divider = divider << 8;
-        divider += cmdBytes[0];
-        setupDelay();
-        break;
-      case SUMP_SET_READ_DELAY_COUNT:
-        getCmd();
-        readCount = 4 * (((cmdBytes[1] << 8) | cmdBytes[0]) + 1);
-        if (readCount > MAX_CAPTURE_SIZE)
-          readCount = MAX_CAPTURE_SIZE;
-        delayCount = 4 * (((cmdBytes[3] << 8) | cmdBytes[2]) + 1);
-        if (delayCount > MAX_CAPTURE_SIZE)
-          delayCount = MAX_CAPTURE_SIZE;
-        break;
+    case SUMP_TRIGGER_MASK_CH_B:
+    case SUMP_TRIGGER_MASK_CH_C:
+    case SUMP_TRIGGER_MASK_CH_D:
+    case SUMP_TRIGGER_VALUES_CH_B:
+    case SUMP_TRIGGER_VALUES_CH_C:
+    case SUMP_TRIGGER_VALUES_CH_D:
+    case SUMP_TRIGGER_CONFIG_CH_A:
+    case SUMP_TRIGGER_CONFIG_CH_B:
+    case SUMP_TRIGGER_CONFIG_CH_C:
+    case SUMP_TRIGGER_CONFIG_CH_D:
+      getCmd();
+      /*
+          No config support
+      */
+      break;
+    case SUMP_SET_DIVIDER:
+      /*
+            the shifting needs to be done on the 32bit unsigned long variable
+          so that << 16 doesn't end up as zero.
+      */
+      getCmd();
+      divider = cmdBytes[2];
+      divider = divider << 8;
+      divider += cmdBytes[1];
+      divider = divider << 8;
+      divider += cmdBytes[0];
+      setupDelay();
+      break;
+    case SUMP_SET_READ_DELAY_COUNT:
+      getCmd();
+      readCount = 4 * (((cmdBytes[1] << 8) | cmdBytes[0]) + 1);
+      if (readCount > MAX_CAPTURE_SIZE)
+        readCount = MAX_CAPTURE_SIZE;
+      delayCount = 4 * (((cmdBytes[3] << 8) | cmdBytes[2]) + 1);
+      if (delayCount > MAX_CAPTURE_SIZE)
+        delayCount = MAX_CAPTURE_SIZE;
+      break;
 
-      case SUMP_SET_FLAGS:
-        getCmd();
-        rleEnabled = cmdBytes[1] & 0x1;
-        channels_to_read = (~(cmdBytes[0] >> 2) & 0x0F);
-        
-        #ifdef _DEBUG_MODE_
-        if (rleEnabled)
-          Serial_Debug_Port.println("RLE Compression enable");
-        else
-          Serial_Debug_Port.println("Non-RLE Operation");
+    case SUMP_SET_FLAGS:
+      getCmd();
+      rleEnabled = cmdBytes[1] & 0x1;
+      channels_to_read = (~(cmdBytes[0] >> 2) & 0x0F);
+      
+      #ifdef _DEBUG_MODE_
+      if (rleEnabled)
+        Serial_Debug_Port.println("RLE Compression enable");
+      else
+        Serial_Debug_Port.println("Non-RLE Operation");
 
-        Serial_Debug_Port.printf("Demux %c\r\n", cmdBytes[0] & 0x01 ? 'Y' : 'N');
-        Serial_Debug_Port.printf("Filter %c\r\n", cmdBytes[0] & 0x02 ? 'Y' : 'N');
-        Serial_Debug_Port.printf("Channels to read: 0x%X \r\n",  channels_to_read);
-        Serial_Debug_Port.printf("External Clock %c\r\n", cmdBytes[0] & 0x40 ? 'Y' : 'N');
-        Serial_Debug_Port.printf("inv_capture_clock %c\r\n", cmdBytes[0] & 0x80 ? 'Y' : 'N');
-        #endif
-        break;
+      Serial_Debug_Port.printf("Demux %c\r\n", cmdBytes[0] & 0x01 ? 'Y' : 'N');
+      Serial_Debug_Port.printf("Filter %c\r\n", cmdBytes[0] & 0x02 ? 'Y' : 'N');
+      Serial_Debug_Port.printf("Channels to read: 0x%X \r\n",  channels_to_read);
+      Serial_Debug_Port.printf("External Clock %c\r\n", cmdBytes[0] & 0x40 ? 'Y' : 'N');
+      Serial_Debug_Port.printf("inv_capture_clock %c\r\n", cmdBytes[0] & 0x80 ? 'Y' : 'N');
+      #endif
+      break;
 
-      case SUMP_GET_METADATA:
-        get_metadata();
-        break;
-      case SUMP_SELF_TEST:
-        break;
-      default:
-        #ifdef _DEBUG_MODE_
-        Serial_Debug_Port.printf("Unrecognized cmd 0x%02X\r\n", cmdByte );
-        #endif
-        getCmd();
-        break;
-    }
+    case SUMP_GET_METADATA:
+      get_metadata();
+      break;
+    case SUMP_SELF_TEST:
+      break;
+    default:
+      #ifdef _DEBUG_MODE_
+      Serial_Debug_Port.printf("Unrecognized cmd 0x%02X\r\n", cmdByte );
+      #endif
+      getCmd();
+      break;
   }
 }
 
