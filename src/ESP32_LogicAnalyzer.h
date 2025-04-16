@@ -1,18 +1,7 @@
 static const char* TAG = "esp32la";
 
-#include <stdint.h>
-#include "soc/i2s_struct.h"
+#include <Arduino.h>
 #include "rom/lldesc.h"
-#include "soc/i2s_struct.h"
-#include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
-#include "soc/io_mux_reg.h"
-#include "esp_heap_caps.h"
-#include "esp_system.h"
-#include "esp_task_wdt.h"
-#include "driver/ledc.h"
-
-
 
 #define _DEBUG_MODE_x
 
