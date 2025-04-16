@@ -31,7 +31,7 @@
 i2s_parallel_buffer_desc_t bufdesc;
 
 void setup(void) {
-  begin();
+  begin(&bufdesc);
 }
 
 void loop()
@@ -44,7 +44,7 @@ void loop()
   }
 }
 
-void begin(void) {
+void begin(i2s_parallel_buffer_desc_t* buffer) {
   i2s_parallel_config_t cfg;
   #ifdef _DEBUG_MODE_
   Serial_Debug_Port.begin(Serial_Debug_Port_Baud);
@@ -96,7 +96,7 @@ void begin(void) {
   //cfg.bits = I2S_PARALLEL_BITS_8; //not implemented yet...
   cfg.bits = I2S_PARALLEL_BITS_16;
   cfg.clkspeed_hz = 2 * 1000 * 1000; //resulting pixel clock = 1MHz
-  cfg.buf = &bufdesc;
+  cfg.buf = buffer;
 
   //enable_out_clock(I2S_HZ);
   //fill_dma_desc( bufdesc );

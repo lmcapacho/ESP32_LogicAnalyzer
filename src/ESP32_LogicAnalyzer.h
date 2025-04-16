@@ -157,7 +157,7 @@ typedef struct {
 camera_state_t *s_state;
 
 void i2s_parallel_setup( const i2s_parallel_config_t *cfg);
-void begin(void);
+void begin(i2s_parallel_buffer_desc_t* buffer);
 void handleCommand(int cmd);
 void captureMilli(void);
 void getCmd(byte *cmdBytes);
