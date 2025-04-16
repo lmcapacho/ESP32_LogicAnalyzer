@@ -2,6 +2,8 @@ static const char* TAG = "esp32la";
 
 #include <Arduino.h>
 #include "rom/lldesc.h"
+#include "soc/i2s_struct.h"
+#include "driver/periph_ctrl.h"
 
 #define _DEBUG_MODE_x
 
