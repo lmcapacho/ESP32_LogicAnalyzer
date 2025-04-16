@@ -155,9 +155,9 @@ static void IRAM_ATTR i2s_isr(void* arg) {
             time_debug_indice_rle[time_debug_indice_rle_p++]=xthal_get_ccount();
           }
 
-      if( (rle_size - (rle_buff_p - rle_buff )) < 4000) {
+      if( (RLE_BUFFER_SIZE - (rle_buff_p - rle_buff )) < 4000) {
         //break;
-        ESP_LOGD(TAG,"Break due rle_buff fill: %d\r\n", (rle_size - (rle_buff_p - rle_buff )));
+        ESP_LOGD(TAG,"Break due rle_buff fill: %d\r\n", (RLE_BUFFER_SIZE - (rle_buff_p - rle_buff )));
         I2S0.int_ena.in_suc_eof = 1;
         esp_intr_disable(s_state->i2s_intr_handle);
         i2s_conf_reset();

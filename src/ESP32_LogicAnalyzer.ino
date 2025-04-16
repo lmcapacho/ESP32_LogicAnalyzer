@@ -2,8 +2,8 @@
   /*************************************************************************
  * 
  *  ESP32 Logic Analyzer
- *  Copyright (C) 2020 Erdem U. Altinyurt
  *  Copyright (C) 2025 lmcapacho (Luis Miguel Capacho V.)  
+ *  Copyright (C) 2020 Erdem U. Altinyurt
  *    
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,26 +70,26 @@ void begin(i2s_parallel_buffer_desc_t* buffer) {
   //GPI10 lead SW_CPU_RESET on WROOVER module
   //GPIO11 used for CMD, bootloop
   
-  cfg.gpio_bus[0]  = 15;  // CH0
-  cfg.gpio_bus[1]  = 4;   // CH1
-  cfg.gpio_bus[2]  = 5;   // CH2
-  cfg.gpio_bus[3]  = 18;  // CH3
-  cfg.gpio_bus[4]  = 19;  // CH4
-  cfg.gpio_bus[5]  = 21;  // CH5
-  cfg.gpio_bus[6]  = 13;  // CH6
-  cfg.gpio_bus[7]  = 12;  // CH7
+  cfg.gpio_bus[0]  = CH0_PIN;
+  cfg.gpio_bus[1]  = CH1_PIN;
+  cfg.gpio_bus[2]  = CH2_PIN;
+  cfg.gpio_bus[3]  = CH3_PIN;
+  cfg.gpio_bus[4]  = CH4_PIN;
+  cfg.gpio_bus[5]  = CH5_PIN;
+  cfg.gpio_bus[6]  = CH6_PIN;
+  cfg.gpio_bus[7]  = CH7_PIN;
   
-  cfg.gpio_bus[8]  = 14;  // CH8
-  cfg.gpio_bus[9]  = 27;  // CH9
-  cfg.gpio_bus[10] = 26;  // CH10
-  cfg.gpio_bus[11] = 25;  // CH11
-  cfg.gpio_bus[12] = 33;  // CH12
-  cfg.gpio_bus[13] = 32;  // CH13
-  cfg.gpio_bus[14] = 35;  // CH14
-  cfg.gpio_bus[15] = 34;  // CH15
+  cfg.gpio_bus[8]  = CH8_PIN;
+  cfg.gpio_bus[9]  = CH9_PIN;
+  cfg.gpio_bus[10] = CH10_PIN;
+  cfg.gpio_bus[11] = CH11_PIN;
+  cfg.gpio_bus[12] = CH12_PIN;
+  cfg.gpio_bus[13] = CH13_PIN;
+  cfg.gpio_bus[14] = CH14_PIN;
+  cfg.gpio_bus[15] = CH15_PIN;
   
-  cfg.gpio_clk_out= CLK_OUT; // Pin22 used for LedC output
-  cfg.gpio_clk_in = 23; // Pin23 used for XCK input from LedC
+  cfg.gpio_clk_out= CLK_OUT; // Used for LedC output
+  cfg.gpio_clk_in = CLK_IN; // Used for XCK input from LedC
   
   //GPIO 20,24,28,29,30,31 results bootloop
     

@@ -5,41 +5,9 @@ static const char* TAG = "esp32la";
 #include "soc/i2s_struct.h"
 #include "driver/periph_ctrl.h"
 
-#define _DEBUG_MODE_x
-
-#ifndef _DEBUG_MODE_
-
-#define OLS_Port Serial      //Serial //Serial1 //Serial2
-#define OLS_Port_Baud 921600 //115200 // 3e6
-
-#else
-#define OLS_Port Serial2     //Serial //Serial1 //Serial2
-#define OLS_Port_Baud 3e6    //115200 // 3e6
-
-#define Serial_Debug_Port Serial //Serial1 //Serial2
-#define Serial_Debug_Port_Baud 921600 //115200
-#endif
-
-#define ALLOW_ZERO_RLE 0
-
- /// ALLOW_ZERO_RLE 1 is Fast mode.
- //Add RLE Count 0 to RLE stack for non repeated values and postpone the RLE processing so faster.
- // 8Bit Mode : ~28.4k clock per 4k block, captures 3000us while inspecting ~10Mhz clock at 20Mhz mode
- //16Bit Mode : ~22.3k clock per 4k block, captures 1500us while inspecting ~10Mhz clock at 20Mhz mode
- 
- /// ALLOW_ZERO_RLE 0 is Slow mode.
- //just RAW RLE buffer. It doesn't add 0 count values for non-repeated RLE values and process flags on the fly, so little slow but efficient.
- // 8Bit Mode : ~34.7k clock per 4k block, captures 4700us while inspecting ~10Mhz clock at 20Mhz mode
- //16Bit Mode : ~30.3k clock per 4k block, captures 2400us while inspecting ~10Mhz clock at 20Mhz mode
-
-#define CAPTURE_SIZE 128000
-//#define CAPTURE_SIZE 12000
-#define rle_size 96000
-
-#define LED_PIN 2 //Led on while running and Blinks while transfering data.
+#include "LogicAnalyzerConfig.h"
 
 #define I2S_PARALLEL_BITS I2S_PARALLEL_BITS_16
-#define CLK_OUT 22
 
 uint32_t time_debug_indice_dma[10];
 uint16_t time_debug_indice_dma_p=0;
@@ -200,7 +168,7 @@ uint8_t channels_to_read=3;
 #define MAX_CAPTURE_SIZE CAPTURE_SIZE
 
 int8_t    rle_process=-1;
-uint8_t   rle_buff [rle_size];
+uint8_t   rle_buff [RLE_BUFFER_SIZE];
 uint8_t*  rle_buff_p;
 uint8_t*  rle_buff_end;
 uint8_t   rle_sample_counter;
@@ -215,9 +183,9 @@ bool rle_init(void){
   rle_process=-1;
   
   rle_buff_p=rle_buff;
-  rle_buff_end = rle_buff+rle_size-4;
+  rle_buff_end = rle_buff+RLE_BUFFER_SIZE-4;
 
-  memset( rle_buff, 0x00, rle_size);
+  memset( rle_buff, 0x00, RLE_BUFFER_SIZE);
   return true;
 }
 
