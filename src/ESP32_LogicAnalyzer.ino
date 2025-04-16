@@ -57,7 +57,7 @@ void begin(i2s_parallel_buffer_desc_t* buffer) {
   //WiFi.mode(WIFI_OFF);
   //btStop();
     
-  pinMode(ledPin, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
 
   dma_desc_init(CAPTURE_SIZE);
 
@@ -295,7 +295,7 @@ void captureMilli() {
   Serial_Debug_Port.printf("Running on CORE #%d\r\n", xPortGetCoreID());
   Serial_Debug_Port.printf("Reading %d Samples\r\n", readCount);
   #endif
-  digitalWrite( ledPin, HIGH );
+  digitalWrite( LED_PIN, HIGH );
 
   ESP_LOGD(TAG, "dma_sample_count: %d", s_state->dma_sample_count);
   rle_init();
@@ -310,7 +310,7 @@ void captureMilli() {
   
   yield();
 
-  digitalWrite( ledPin, LOW );
+  digitalWrite( LED_PIN, LOW );
   #ifdef _DEBUG_MODE_
   Serial_Debug_Port.printf("ReadCount:  %d complete\r\n",readCount);
   Serial_Debug_Port.printf("DMA Desc Current: %d\r\n",  s_state->dma_desc_cur);
@@ -502,7 +502,7 @@ void captureMilli() {
   else{
     for ( int j = filled_desc; j >= 0 ; j-- ) {
       ESP_LOGD(TAG, "filled_buff trgx = %d", (j + s_state->dma_desc_triggered + s_state->dma_desc_count) % s_state->dma_desc_count);
-      digitalWrite( ledPin, !digitalRead(ledPin) );
+      digitalWrite( LED_PIN, !digitalRead(LED_PIN) );
       //for( int i=s_state->dma_buf_width/4 - 1; i >=0 ; i-- ){
       
       if(0){
@@ -562,5 +562,5 @@ void captureMilli() {
 brexit:
   //ESP_LOGD(TAG, "TX_Count: %d", tx_count);
   ESP_LOGD(TAG, "End. TX: %d", tx_count);
-  digitalWrite( ledPin, LOW );
+  digitalWrite(LED_PIN, LOW);
 }

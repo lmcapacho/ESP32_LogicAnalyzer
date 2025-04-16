@@ -36,7 +36,7 @@ static const char* TAG = "esp32la";
 //#define CAPTURE_SIZE 12000
 #define rle_size 96000
 
-#define ledPin 2 //Led on while running and Blinks while transfering data.
+#define LED_PIN 2 //Led on while running and Blinks while transfering data.
 
 #define I2S_PARALLEL_BITS I2S_PARALLEL_BITS_16
 #define CLK_OUT 22
