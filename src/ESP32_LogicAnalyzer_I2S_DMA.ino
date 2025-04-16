@@ -446,7 +446,7 @@ void i2s_parallel_setup(const i2s_parallel_config_t *cfg) {
 static void enable_out_clock( uint32_t freq_in_hz ) {
     ledcSetup(0, freq_in_hz, 1);
     //ledcAttachPin(cfg.gpio_clk_in, 0); //Not work anymore!
-    ledcAttachPin(cfg.gpio_clk_out, 0); 
+    ledcAttachPin(CLK_OUT, 0); 
     ledcWrite( 0, 1);
     delay(10);
 }

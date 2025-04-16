@@ -38,6 +38,9 @@ static const char* TAG = "esp32la";
 
 #define ledPin 2 //Led on while running and Blinks while transfering data.
 
+#define I2S_PARALLEL_BITS I2S_PARALLEL_BITS_16
+#define CLK_OUT 22
+
 uint32_t time_debug_indice_dma[10];
 uint16_t time_debug_indice_dma_p=0;
 

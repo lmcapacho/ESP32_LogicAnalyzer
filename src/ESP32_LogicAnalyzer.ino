@@ -29,7 +29,6 @@
 #include "ESP32_LogicAnalyzer.h"
 
 i2s_parallel_buffer_desc_t bufdesc;
-i2s_parallel_config_t cfg;
 
 void setup(void) {
   begin();
@@ -46,6 +45,7 @@ void loop()
 }
 
 void begin(void) {
+  i2s_parallel_config_t cfg;
   #ifdef _DEBUG_MODE_
   Serial_Debug_Port.begin(Serial_Debug_Port_Baud);
   //Using for development
@@ -88,7 +88,7 @@ void begin(void) {
   cfg.gpio_bus[14] = 35;  // CH14
   cfg.gpio_bus[15] = 34;  // CH15
   
-  cfg.gpio_clk_out= 22; // Pin22 used for LedC output
+  cfg.gpio_clk_out= CLK_OUT; // Pin22 used for LedC output
   cfg.gpio_clk_in = 23; // Pin23 used for XCK input from LedC
   
   //GPIO 20,24,28,29,30,31 results bootloop
@@ -267,7 +267,7 @@ void get_metadata() {
   //OLS_Port.write((uint8_t)0x08);//8
   //OLS_Port.write((uint8_t)0x10);//16
   //OLS_Port.write((uint8_t)0x20);//32
-  OLS_Port.write((uint8_t) cfg.bits);
+  OLS_Port.write((uint8_t) I2S_PARALLEL_BITS);
 
   /* protocol version (2) */
   OLS_Port.write((uint8_t)0x41);
