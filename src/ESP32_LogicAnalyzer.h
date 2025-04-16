@@ -152,6 +152,11 @@ typedef struct {
 camera_state_t *s_state;
 
 void i2s_parallel_setup( const i2s_parallel_config_t *cfg);
+void begin(void);
+void handleCommand(int cmd);
+void captureMilli(void);
+void getCmd(void);
+void get_metadata(void);
 
 uint8_t channels_to_read=3;
 /* XON/XOFF are not supported. */

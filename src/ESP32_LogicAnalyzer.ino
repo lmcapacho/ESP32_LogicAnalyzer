@@ -34,11 +34,6 @@ i2s_parallel_config_t cfg;
 int cmdByte = 0;
 byte cmdBytes[5];
 
-void begin(void);
-void captureMilli(void);
-void getCmd(void);
-void get_metadata(void);
-
 void setup(void) {
   begin();
 }
