@@ -286,7 +286,6 @@ void setupDelay() {
 }
 
 void captureMilli() {
-  uint32_t a, b, c, d;
   #ifdef _DEBUG_MODE_
   Serial_Debug_Port.printf("FreeHeap         :%u\r\n", ESP.getFreeHeap());
   Serial_Debug_Port.printf("FreeHeap 64 Byte :%u\r\n", heap_caps_get_largest_free_block(64) );
