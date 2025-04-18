@@ -211,7 +211,7 @@ static void dma_desc_deinit(){
 }
 
 static esp_err_t dma_desc_init(int raw_byte_size){
-    s_state = (camera_state_t*) malloc (sizeof(camera_state_t));
+    s_state = (logic_analyzer_state_t*) malloc (sizeof(logic_analyzer_state_t));
     assert(raw_byte_size % 4 == 0);
 
     ESP_LOGD(TAG, "Buffer Total (for DMA): %d bytes", raw_byte_size);

@@ -120,9 +120,9 @@ typedef struct {
 //    QueueHandle_t data_ready;
 //    SemaphoreHandle_t frame_ready;
 //    TaskHandle_t dma_filter_task;
-} camera_state_t;
+} logic_analyzer_state_t;
 
-camera_state_t *s_state;
+logic_analyzer_state_t *s_state;
 
 void i2s_parallel_setup( const i2s_parallel_config_t *cfg);
 void begin(i2s_parallel_buffer_desc_t* buffer);
