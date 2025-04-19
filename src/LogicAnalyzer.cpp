@@ -555,9 +555,13 @@ void LogicAnalyzer::gpio_setup_in(int gpio, int sig, int inv)
 
 void LogicAnalyzer::enable_out_clock(uint32_t freq_in_hz)
 {
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    ledcAttach(CLK_OUT, freq_in_hz, 1);
+    ledcWrite(CLK_OUT, 1);
+#else
     ledcSetup(0, freq_in_hz, 1);
-    // ledcAttachPin(cfg.gpio_clk_in, 0); //Not work anymore!
-    ledcAttachPin(CLK_OUT, 0);
+    ledcAttachPin(CLK_OUT, 0);    
     ledcWrite(0, 1);
+#endif
     delay(10);
 }
