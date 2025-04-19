@@ -16,7 +16,7 @@ A [SUMP](http://dangerousprototypes.com/docs/The_Logic_Sniffer%27s_extended_SUMP
 - Default OLS port is **UART0** with a default baud rate of **912600**.
 - You can configure UART ports and high-speed baud rates for OLS communication by editing the definitions in LogicAnalyzerConfig.h.
 
-## Supported Environments
+### Supported Environments
 
 | Environment    | Status | Details                                 |
 |----------------|--------|-----------------------------------------|
