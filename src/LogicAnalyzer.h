@@ -4,6 +4,9 @@ static const char *TAG = "esp32la";
 #include "rom/lldesc.h"
 #include "soc/i2s_struct.h"
 #include "driver/periph_ctrl.h"
+#include "esp32/rom/gpio.h"
+#include "soc/io_mux_reg.h"
+#include "soc/gpio_periph.h"
 
 #include "LogicAnalyzerConfig.h"
 
