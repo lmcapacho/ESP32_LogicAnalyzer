@@ -1,6 +1,6 @@
 #include "LogicAnalyzer.h"
 
-void LogicAnalyzer::begin(i2s_parallel_buffer_desc_t *buffer)
+void LogicAnalyzer::begin()
 {
     i2s_parallel_config_t cfg;
 #ifdef _DEBUG_MODE_
@@ -53,7 +53,7 @@ void LogicAnalyzer::begin(i2s_parallel_buffer_desc_t *buffer)
     // cfg.bits = I2S_PARALLEL_BITS_8; //not implemented yet...
     cfg.bits = I2S_PARALLEL_BITS_16;
     cfg.clkspeed_hz = 2 * 1000 * 1000; // resulting pixel clock = 1MHz
-    cfg.buf = buffer;
+    cfg.buf = &bufdesc;
 
     // enable_out_clock(I2S_HZ);
     // fill_dma_desc( bufdesc );

@@ -143,12 +143,14 @@ void IRAM_ATTR i2s_wrapper(void *arg);
 class LogicAnalyzer
 {
 public:
-    void begin(i2s_parallel_buffer_desc_t *buffer);
+    void begin(void);
     void handleCommand(int cmd);
     void i2s_isr(void *arg);
 
 private:
     uint8_t channels_to_read = 3;
+
+    i2s_parallel_buffer_desc_t bufdesc;
 
     int8_t rle_process = -1;
     uint8_t rle_buff[RLE_BUFFER_SIZE];

@@ -28,11 +28,10 @@
  */ 
 #include "LogicAnalyzer.h"
 
-i2s_parallel_buffer_desc_t bufdesc;
 LogicAnalyzer esp32la;
 
 void setup(void) {
-  esp32la.begin(&bufdesc);
+  esp32la.begin();
 }
 
 void loop()
