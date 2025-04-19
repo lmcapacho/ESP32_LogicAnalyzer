@@ -16,23 +16,37 @@ A [SUMP](http://dangerousprototypes.com/docs/The_Logic_Sniffer%27s_extended_SUMP
 - Default OLS port is **UART0** with a default baud rate of **912600**.
 - You can configure UART ports and high-speed baud rates for OLS communication by editing the definitions in LogicAnalyzerConfig.h.
 
-## WARNING
+## Supported Environments
 
-- **For OLS port at UART0**:
-  - Set **"Core Debug Level" = None** before compiling the code in Arduino, especially for > 10 MHz capture operations.
-- **GPIO23** is used for I2S input clock, and **GPIO22** is used for LEDC clock output. Do not use these pins for I/O or change them and connect them to other unused pins in the code.
+| Environment    | Status | Details                                 |
+|----------------|--------|-----------------------------------------|
+| PlatformIO     | ✅     | Tested with `platform-espressif32@6.10.0` |
+| Arduino IDE    | ✅     | Tested with `Arduino-ESP32 core 3.2.0`    |
 
-## Under Development
+### Under Development
 
-- Arduino support to compile and flash ESP32.
 - WROOVER modules support **2M** samples but only up to **2 MHz** due to bandwidth limits on PSRAM access.
 - Analog input support.
 
 ## Quick Start Guide
 
+### Environments
+
+#### PlatformIO
+
 1. Install [PlatformIO](https://platformio.org/) in VS Code.
 2. Open the project folder in PlatformIO.
 3. Build the project and flash it to your ESP32.
+
+#### Arduino IDE
+
+1. Install the **ESP32 board support** via the Boards Manager (`esp32 by Espressif Systems`).
+2. Open the sketch in `ESP32_LogicAnalyzer/ESP32_LogicAnalyzer.ino`.
+3. Select the board you're using (e.g. `ESP32 Dev Module`).
+4. Make sure you're using the ESP32 Arduino core version 3.2.0.
+5. Click **Upload**.
+
+**Important:** If you're using UART0 for OLS communication, set **Core Debug Level = None** in the Arduino IDE before compiling, especially for captures above 10 MHz.
 
 ### PulseView
 
@@ -56,10 +70,13 @@ For more details, see the [PulseView documentation](https://sigrok.org/wiki/Puls
 |----------|-----------------------------------------|
 | clk_in   | GPIO23 (connect to **clk_out**)         |
 | clk_out  | GPIO22 (connect to **clk_in**)          |
-| Ground   | Connect device GND to ESP32 GND         |
+| Ground   | Connect the target device's GND to the ESP32 GND         |
 | Channels | CH15 - CH0 (connect your signals here)  |
 
 <img src="/docs/images/esp32_la_conn.png" alt="ESP32LA Connection" style="width: 50%;" />
+
+⚠️ **Warning:** GPIO23 is used for I2S input clock and GPIO22 for LEDC output clock.  
+Do not use these pins for general I/O. If needed, change them in the code and rewire accordingly.
 
 ## Attributions
 
