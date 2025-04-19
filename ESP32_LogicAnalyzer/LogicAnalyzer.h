@@ -1,5 +1,3 @@
-static const char *TAG = "esp32la";
-
 #include <Arduino.h>
 #include "rom/lldesc.h"
 #include "soc/i2s_struct.h"

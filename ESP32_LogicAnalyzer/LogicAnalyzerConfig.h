@@ -1,6 +1,8 @@
 #ifndef LOGIC_ANALYZER_CONFIG_H
 #define LOGIC_ANALYZER_CONFIG_H
 
+#define TAG "esp32la"
+
 // Uncomment to enable debug output (uses Serial_Debug_Port)
 //#define _DEBUG_MODE_
 
