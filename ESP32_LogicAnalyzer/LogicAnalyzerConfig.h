@@ -55,12 +55,12 @@
 #define LED_PIN 2  // LED lights up while capturing
 
 // Channel input pins
-#define CH0_PIN   15
-#define CH1_PIN   4
-#define CH2_PIN   5
-#define CH3_PIN   18
-#define CH4_PIN   19
-#define CH5_PIN   21
+#define CH0_PIN   21
+#define CH1_PIN   19
+#define CH2_PIN   18
+#define CH3_PIN   5
+#define CH4_PIN   4
+#define CH5_PIN   15
 #define CH6_PIN   13
 #define CH7_PIN   12
 #define CH8_PIN   14
