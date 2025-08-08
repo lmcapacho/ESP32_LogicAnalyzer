@@ -85,7 +85,7 @@ This project includes a custom PCB designed in **KiCad 9** to connect the ESP32 
 All hardware-related files are located in the [`hardware/`](./hardware) folder and include:
 
 - Complete KiCad project (`.kicad_pro`, `.kicad_sch`, `.kicad_pcb`)
-- BOM (`bom.csv`) and CPL (`placement.csv`) for assembly
+- BOM (`BOM.xlsx`) and CPL (`CPL1.xlsx`) for assembly
 - Gerber files (`hardware/gerbers/`) for PCB fabrication
 - Optional UART2 debug port
 - Level shifter ICs (SN74LVC245A) for 5V input compatibility
