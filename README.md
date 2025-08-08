@@ -78,6 +78,24 @@ For more details, see the [PulseView documentation](https://sigrok.org/wiki/Puls
 ⚠️ **Warning:** GPIO23 is used for I2S input clock and GPIO22 for LEDC output clock.  
 Do not use these pins for general I/O. If needed, change them in the code and rewire accordingly.
 
+## Hardware Design (KiCad)
+
+This project includes a custom PCB designed in **KiCad 9** to connect the ESP32 DevKitC V1 with logic analyzer channels and level shifters.
+
+All hardware-related files are located in the [`hardware/`](./hardware) folder and include:
+
+- Complete KiCad project (`.kicad_pro`, `.kicad_sch`, `.kicad_pcb`)
+- BOM (`bom.csv`) and CPL (`placement.csv`) for assembly
+- Gerber files (`hardware/gerbers/`) for PCB fabrication
+- Optional UART2 debug port
+- Level shifter ICs (SN74LVC245A) for 5V input compatibility
+
+> ⚠️ The design is currently under validation. Use at your own risk until physical tests are completed.
+
+### PCB Preview
+
+![3D View of PCB](./hardware/images/pcb_3d.png)
+
 ## Attributions
 
 This project is a fork of [ESP32_LogicAnalyzer](https://github.com/EUA/ESP32_LogicAnalyzer), created by [Erdem U. Altinyurt](https://github.com/EUA).
