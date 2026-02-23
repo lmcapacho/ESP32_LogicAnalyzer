@@ -20,8 +20,8 @@ A [SUMP](http://dangerousprototypes.com/docs/The_Logic_Sniffer%27s_extended_SUMP
 
 | Environment    | Status | Details                                 |
 |----------------|--------|-----------------------------------------|
-| PlatformIO     | ✅     | Tested with `platform-espressif32@6.10.0` |
-| Arduino IDE    | ✅     | Tested with `Arduino-ESP32 core 3.2.0`    |
+| PlatformIO     | ✅     | Tested with `platform-espressif32@6.11.0` |
+| Arduino IDE    | ✅     | Tested with `Arduino-ESP32 core 3.3.7` |
 
 ### Under Development
 
@@ -43,7 +43,7 @@ A [SUMP](http://dangerousprototypes.com/docs/The_Logic_Sniffer%27s_extended_SUMP
 1. Install the **ESP32 board support** via the Boards Manager (`esp32 by Espressif Systems`).
 2. Open the sketch in `ESP32_LogicAnalyzer/ESP32_LogicAnalyzer.ino`.
 3. Select the board you're using (e.g. `ESP32 Dev Module`).
-4. Make sure you're using the ESP32 Arduino core version 3.2.0.
+4. Use ESP32 Arduino core version `3.3.7`.
 5. Click **Upload**.
 
 **Important:** If you're using UART0 for OLS communication, set **Core Debug Level = None** in the Arduino IDE before compiling, especially for captures above 10 MHz.
