@@ -1,0 +1,20 @@
+# PlatformIO build/cache
+.pio/
+
+# VS Code workspace/local data
+.vscode/
+
+# OS/editor temporary files
+.DS_Store
+Thumbs.db
+*~
+*.swp
+
+# KiCad local/temporary files
+*.kicad_prl
+*.kicad_pro-bak
+*.kicad_sch-bak
+*.kicad_pcb-bak
+*-backups/
+__pycache__/
+fp-info-cache
