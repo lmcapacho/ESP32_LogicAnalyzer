@@ -1,7 +1,15 @@
 #include "LogicAnalyzer.h"
+#include "hal/i2s_dma_hal.h"
 
 void LogicAnalyzer::begin()
 {
+    i2s_dma_hal::Config hal_cfg;
+    hal_cfg.gpio_clk_in = CLK_IN;
+    hal_cfg.bits = I2S_PARALLEL_BITS_16;
+
+    if (!i2s_dma_hal::init(hal_cfg))
+        return;
+
     i2s_parallel_config_t cfg;
 #ifdef _DEBUG_MODE_
     Serial_Debug_Port.begin(Serial_Debug_Port_Baud);
