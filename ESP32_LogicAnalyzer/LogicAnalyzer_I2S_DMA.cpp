@@ -1,5 +1,12 @@
 #include "LogicAnalyzer.h"
 
+#if defined(CONFIG_IDF_TARGET_ESP32)
+#include "soc/i2s_struct.h"
+#include "driver/periph_ctrl.h"
+#include "esp32/rom/gpio.h"
+#include "soc/io_mux_reg.h"
+#include "soc/gpio_periph.h"
+
 void LogicAnalyzer::start_dma_capture(void)
 {
     s_state->dma_done = false;
@@ -489,3 +496,5 @@ uint16_t buff_process_trigger_0(uint16_t *buff, int size, bool printit)
         ESP_LOGD(TAG, "Process trigger 0: 0x%X", a);
     return a;
 }
+
+#endif

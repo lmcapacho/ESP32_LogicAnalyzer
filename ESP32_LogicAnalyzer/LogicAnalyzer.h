@@ -1,10 +1,13 @@
 #include <Arduino.h>
+#include "esp_err.h"
+#include "esp_intr_alloc.h"
+#if __has_include("esp_private/dma_types.h")
+#include "esp_private/dma_types.h"
+#elif __has_include("hal/dma_types.h")
+#include "hal/dma_types.h"
+#else
 #include "rom/lldesc.h"
-#include "soc/i2s_struct.h"
-#include "driver/periph_ctrl.h"
-#include "esp32/rom/gpio.h"
-#include "soc/io_mux_reg.h"
-#include "soc/gpio_periph.h"
+#endif
 
 #include "LogicAnalyzerConfig.h"
 
