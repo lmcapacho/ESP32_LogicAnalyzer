@@ -1,6 +1,6 @@
 #include "LogicAnalyzer.h"
 #include "hal/i2s_dma_hal.h"
-#if defined(CONFIG_IDF_TARGET_ESP32)
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "soc/i2s_struct.h"
 #include "esp32/rom/gpio.h"
 #include "soc/io_mux_reg.h"
@@ -282,7 +282,7 @@ void LogicAnalyzer::captureMilli()
 
     start_dma_capture();
     yield();
-#if defined(CONFIG_IDF_TARGET_ESP32)
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
     I2S0.conf.rx_start = 1;
 #endif
     delay(100); // this delay is strictly need for error free capturing...
@@ -561,7 +561,7 @@ brexit:
 
 void LogicAnalyzer::gpio_setup_in(int gpio, int sig, int inv)
 {
-#if defined(CONFIG_IDF_TARGET_ESP32)
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
     (void)inv;
     if (gpio == -1)
         return;

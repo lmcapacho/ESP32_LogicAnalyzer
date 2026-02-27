@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include "esp_err.h"
 #include "esp_intr_alloc.h"
-#if __has_include("esp_private/dma_types.h")
+#if __has_include("soc/lldesc.h")
+#include "soc/lldesc.h"
+#elif __has_include("esp_private/dma_types.h")
 #include "esp_private/dma_types.h"
 #elif __has_include("hal/dma_types.h")
 #include "hal/dma_types.h"

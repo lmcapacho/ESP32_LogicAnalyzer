@@ -1,6 +1,6 @@
 #include "LogicAnalyzer.h"
 
-#if !defined(CONFIG_IDF_TARGET_ESP32)
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
 
 void LogicAnalyzer::start_dma_capture(void) {}
 

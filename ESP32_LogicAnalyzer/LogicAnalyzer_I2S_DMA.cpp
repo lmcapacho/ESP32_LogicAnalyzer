@@ -1,6 +1,6 @@
 #include "LogicAnalyzer.h"
 
-#if defined(CONFIG_IDF_TARGET_ESP32)
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "soc/i2s_struct.h"
 #include "driver/periph_ctrl.h"
 #include "esp32/rom/gpio.h"
