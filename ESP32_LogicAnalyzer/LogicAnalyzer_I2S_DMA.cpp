@@ -1,11 +1,35 @@
 #include "LogicAnalyzer.h"
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if __has_include("soc/i2s_struct.h")
 #include "soc/i2s_struct.h"
+#elif __has_include("esp32/soc/i2s_struct.h")
+#include "esp32/soc/i2s_struct.h"
+#elif __has_include("esp32s3/soc/i2s_struct.h")
+#include "esp32s3/soc/i2s_struct.h"
+#endif
 #include "driver/periph_ctrl.h"
+#if __has_include("esp32/rom/gpio.h")
 #include "esp32/rom/gpio.h"
+#elif __has_include("esp32s3/rom/gpio.h")
+#include "esp32s3/rom/gpio.h"
+#elif __has_include("esp_rom_gpio.h")
+#include "esp_rom_gpio.h"
+#endif
+#if __has_include("soc/io_mux_reg.h")
 #include "soc/io_mux_reg.h"
+#elif __has_include("esp32/soc/io_mux_reg.h")
+#include "esp32/soc/io_mux_reg.h"
+#elif __has_include("esp32s3/soc/io_mux_reg.h")
+#include "esp32s3/soc/io_mux_reg.h"
+#endif
+#if __has_include("soc/gpio_periph.h")
 #include "soc/gpio_periph.h"
+#elif __has_include("esp32/soc/gpio_periph.h")
+#include "esp32/soc/gpio_periph.h"
+#elif __has_include("esp32s3/soc/gpio_periph.h")
+#include "esp32s3/soc/gpio_periph.h"
+#endif
 
 void LogicAnalyzer::start_dma_capture(void)
 {
