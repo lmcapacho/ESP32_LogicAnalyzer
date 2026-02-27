@@ -19,6 +19,11 @@ bool init(const Config &cfg)
     return s_initialized;
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
     s_initialized = init_esp32s3(cfg);
+    if (s_initialized)
+    {
+        s_legacy_ctx = nullptr;
+        s_legacy_ops = legacy_ops_esp32s3();
+    }
     return s_initialized;
 #else
     (void)cfg;

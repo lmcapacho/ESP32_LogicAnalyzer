@@ -55,11 +55,13 @@ void LogicAnalyzer::begin()
     if (!i2s_dma_hal::init(hal_cfg))
         return;
 
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
     i2s_dma_hal::LegacyOps legacy_ops;
     legacy_ops.dma_desc_init = &LogicAnalyzer::hal_dma_desc_init_bridge;
     legacy_ops.i2s_parallel_setup = &LogicAnalyzer::hal_i2s_parallel_setup_bridge;
     legacy_ops.start_dma_capture = &LogicAnalyzer::hal_start_dma_capture_bridge;
     i2s_dma_hal::bind_legacy_ops(this, legacy_ops);
+#endif
 
     i2s_parallel_config_t cfg;
 #ifdef _DEBUG_MODE_
