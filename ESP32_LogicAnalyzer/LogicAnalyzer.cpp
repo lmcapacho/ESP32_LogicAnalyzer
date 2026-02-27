@@ -1,11 +1,50 @@
 #include "LogicAnalyzer.h"
 #include "hal/i2s_dma_hal.h"
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
+#if __has_include("soc/i2s_struct.h")
 #include "soc/i2s_struct.h"
-#include "esp32/rom/gpio.h"
-#include "soc/io_mux_reg.h"
-#include "soc/gpio_periph.h"
+#elif __has_include("esp32/soc/i2s_struct.h")
+#include "esp32/soc/i2s_struct.h"
+#elif __has_include("esp32s3/soc/i2s_struct.h")
+#include "esp32s3/soc/i2s_struct.h"
 #endif
+#if __has_include("esp32/rom/gpio.h")
+#include "esp32/rom/gpio.h"
+#elif __has_include("esp32s3/rom/gpio.h")
+#include "esp32s3/rom/gpio.h"
+#elif __has_include("esp_rom_gpio.h")
+#include "esp_rom_gpio.h"
+#endif
+#if __has_include("soc/io_mux_reg.h")
+#include "soc/io_mux_reg.h"
+#elif __has_include("esp32/soc/io_mux_reg.h")
+#include "esp32/soc/io_mux_reg.h"
+#elif __has_include("esp32s3/soc/io_mux_reg.h")
+#include "esp32s3/soc/io_mux_reg.h"
+#endif
+#if __has_include("soc/gpio_periph.h")
+#include "soc/gpio_periph.h"
+#elif __has_include("esp32/soc/gpio_periph.h")
+#include "esp32/soc/gpio_periph.h"
+#elif __has_include("esp32s3/soc/gpio_periph.h")
+#include "esp32s3/soc/gpio_periph.h"
+#endif
+#endif
+
+esp_err_t LogicAnalyzer::hal_dma_desc_init_bridge(void *ctx, int raw_byte_size)
+{
+    return static_cast<LogicAnalyzer *>(ctx)->dma_desc_init(raw_byte_size);
+}
+
+void LogicAnalyzer::hal_i2s_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg)
+{
+    static_cast<LogicAnalyzer *>(ctx)->i2s_parallel_setup(cfg);
+}
+
+void LogicAnalyzer::hal_start_dma_capture_bridge(void *ctx)
+{
+    static_cast<LogicAnalyzer *>(ctx)->start_dma_capture();
+}
 
 void LogicAnalyzer::begin()
 {
@@ -15,6 +54,12 @@ void LogicAnalyzer::begin()
 
     if (!i2s_dma_hal::init(hal_cfg))
         return;
+
+    i2s_dma_hal::LegacyOps legacy_ops;
+    legacy_ops.dma_desc_init = &LogicAnalyzer::hal_dma_desc_init_bridge;
+    legacy_ops.i2s_parallel_setup = &LogicAnalyzer::hal_i2s_parallel_setup_bridge;
+    legacy_ops.start_dma_capture = &LogicAnalyzer::hal_start_dma_capture_bridge;
+    i2s_dma_hal::bind_legacy_ops(this, legacy_ops);
 
     i2s_parallel_config_t cfg;
 #ifdef _DEBUG_MODE_
@@ -30,7 +75,7 @@ void LogicAnalyzer::begin()
 
     pinMode(LED_PIN, OUTPUT);
 
-    esp_err_t dma_init_err = dma_desc_init(CAPTURE_SIZE);
+    esp_err_t dma_init_err = i2s_dma_hal::dma_desc_init(CAPTURE_SIZE);
     if (dma_init_err != ESP_OK)
     {
         capture_backend_ready = false;
@@ -76,7 +121,7 @@ void LogicAnalyzer::begin()
 
     // enable_out_clock(I2S_HZ);
     // fill_dma_desc( bufdesc );
-    i2s_parallel_setup(&cfg);
+    i2s_dma_hal::i2s_parallel_setup(&cfg);
 }
 
 void LogicAnalyzer::handleCommand(int cmdByte)
@@ -287,7 +332,7 @@ void LogicAnalyzer::captureMilli()
     ESP_LOGD(TAG, "dma_sample_count: %d", s_state->dma_sample_count);
     rle_init();
 
-    start_dma_capture();
+    i2s_dma_hal::start_dma_capture();
     i2s_dma_hal::start();
     yield();
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)

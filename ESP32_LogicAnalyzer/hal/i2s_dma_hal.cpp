@@ -9,6 +9,8 @@
 namespace i2s_dma_hal {
 
 static bool s_initialized = false;
+static void *s_legacy_ctx = nullptr;
+static LegacyOps s_legacy_ops = {};
 
 bool init(const Config &cfg)
 {
@@ -45,6 +47,33 @@ void stop()
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
     stop_esp32s3();
 #endif
+}
+
+void bind_legacy_ops(void *ctx, const LegacyOps &ops)
+{
+    s_legacy_ctx = ctx;
+    s_legacy_ops = ops;
+}
+
+esp_err_t dma_desc_init(int raw_byte_size)
+{
+    if (!s_legacy_ops.dma_desc_init)
+        return ESP_ERR_NOT_SUPPORTED;
+    return s_legacy_ops.dma_desc_init(s_legacy_ctx, raw_byte_size);
+}
+
+void i2s_parallel_setup(const i2s_parallel_config_t *cfg)
+{
+    if (!s_legacy_ops.i2s_parallel_setup)
+        return;
+    s_legacy_ops.i2s_parallel_setup(s_legacy_ctx, cfg);
+}
+
+void start_dma_capture()
+{
+    if (!s_legacy_ops.start_dma_capture)
+        return;
+    s_legacy_ops.start_dma_capture(s_legacy_ctx);
 }
 
 } // namespace i2s_dma_hal

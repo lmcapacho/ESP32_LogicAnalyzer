@@ -85,7 +85,7 @@ typedef struct
     size_t size;
 } i2s_parallel_buffer_desc_t;
 
-typedef struct
+typedef struct i2s_parallel_config_t
 {
     int8_t gpio_bus[16];
     int8_t gpio_clk_in;
@@ -204,6 +204,10 @@ private:
 
     void i2s_conf_reset();
     void i2s_parallel_setup(const i2s_parallel_config_t *cfg);
+
+    static esp_err_t hal_dma_desc_init_bridge(void *ctx, int raw_byte_size);
+    static void hal_i2s_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg);
+    static void hal_start_dma_capture_bridge(void *ctx);
 
     bool rle_init(void);
     void fast_rle_block_encode_asm_8bit_ch1(uint8_t *dma_buffer, int sample_size);
