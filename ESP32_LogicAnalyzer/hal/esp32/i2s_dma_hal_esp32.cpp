@@ -8,4 +8,8 @@ bool init_esp32(const Config &cfg)
     return true;
 }
 
+void start_esp32() {}
+
+void stop_esp32() {}
+
 } // namespace i2s_dma_hal

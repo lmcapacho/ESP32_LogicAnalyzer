@@ -30,7 +30,12 @@ void LogicAnalyzer::begin()
 
     pinMode(LED_PIN, OUTPUT);
 
-    dma_desc_init(CAPTURE_SIZE);
+    esp_err_t dma_init_err = dma_desc_init(CAPTURE_SIZE);
+    if (dma_init_err != ESP_OK)
+    {
+        capture_backend_ready = false;
+        return;
+    }
 
     // GPIO01 used for UART 0 RX, able to use it if you select different UART port (1,2) as OLS_Port
     // GPIO03 used for UART 0 TX
@@ -92,6 +97,8 @@ void LogicAnalyzer::handleCommand(int cmdByte)
         // OLS_Port.print(F("1SLO"));
         break;
     case SUMP_ARM:
+        if (!capture_backend_ready)
+            break;
         captureMilli();
         break;
     case SUMP_TRIGGER_MASK_CH_A:
@@ -281,6 +288,7 @@ void LogicAnalyzer::captureMilli()
     rle_init();
 
     start_dma_capture();
+    i2s_dma_hal::start();
     yield();
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
     I2S0.conf.rx_start = 1;
@@ -289,6 +297,7 @@ void LogicAnalyzer::captureMilli()
 
     while (!s_state->dma_done)
         delay(100);
+    i2s_dma_hal::stop();
 
     yield();
 

@@ -164,6 +164,7 @@ private:
     uint8_t rle_value_holder;
     i2s_parallel_state_t *i2s_state[2] = {NULL, NULL};
     logic_analyzer_state_t *s_state;
+    bool capture_backend_ready = true;
 
     uint32_t time_debug_indice_dma[10];
     uint16_t time_debug_indice_dma_p = 0;

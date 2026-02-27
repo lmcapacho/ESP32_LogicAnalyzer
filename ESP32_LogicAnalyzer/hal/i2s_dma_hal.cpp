@@ -29,12 +29,22 @@ void start()
 {
     if (!s_initialized)
         return;
+#if defined(CONFIG_IDF_TARGET_ESP32)
+    start_esp32();
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    start_esp32s3();
+#endif
 }
 
 void stop()
 {
     if (!s_initialized)
         return;
+#if defined(CONFIG_IDF_TARGET_ESP32)
+    stop_esp32();
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+    stop_esp32s3();
+#endif
 }
 
 } // namespace i2s_dma_hal
