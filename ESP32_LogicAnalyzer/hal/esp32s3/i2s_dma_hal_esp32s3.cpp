@@ -33,6 +33,9 @@ bool s_warned_not_supported = false;
 gdma_channel_handle_t s_rx_dma_chan = nullptr;
 logic_analyzer_state_t *s_active_state = nullptr;
 bool s_dma_ready = false;
+volatile uint32_t s_eof_count = 0;
+volatile intptr_t s_last_eof_desc = 0;
+volatile uint32_t s_last_first_word = 0;
 
 bool IRAM_ATTR on_gdma_recv_eof_s3(gdma_channel_handle_t dma_chan, gdma_event_data_t *event_data, void *user_data)
 {
@@ -43,6 +46,8 @@ bool IRAM_ATTR on_gdma_recv_eof_s3(gdma_channel_handle_t dma_chan, gdma_event_da
         return false;
 
     intptr_t eof_addr = event_data ? event_data->rx_eof_desc_addr : 0;
+    s_eof_count++;
+    s_last_eof_desc = eof_addr;
     if (eof_addr >= reinterpret_cast<intptr_t>(&state->dma_desc[0]) &&
         eof_addr < reinterpret_cast<intptr_t>(&state->dma_desc[state->dma_desc_count]))
     {
@@ -53,6 +58,9 @@ bool IRAM_ATTR on_gdma_recv_eof_s3(gdma_channel_handle_t dma_chan, gdma_event_da
     {
         state->dma_desc_cur = state->dma_desc_count;
     }
+
+    if (state->dma_buf && state->dma_buf[0])
+        s_last_first_word = reinterpret_cast<uint32_t *>(state->dma_buf[0])[0];
 
     LCD_CAM.cam_ctrl1.cam_start = 0;
     state->dma_done = true;
@@ -181,6 +189,9 @@ static void start_dma_capture_s3(void *ctx)
         return;
 
     s_active_state = state;
+    s_eof_count = 0;
+    s_last_eof_desc = 0;
+    s_last_first_word = 0;
     state->dma_done = false;
     state->dma_desc_cur = 0;
     state->dma_received_count = 0;
@@ -241,6 +252,10 @@ void stop_esp32s3()
     LCD_CAM.cam_ctrl1.cam_start = 0;
     if (s_rx_dma_chan)
         gdma_stop(s_rx_dma_chan);
+    ESP_LOGI(S3_HAL_TAG, "S3 capture summary: eof_count=%u last_desc=0x%08x first_word=0x%08x",
+             static_cast<unsigned>(s_eof_count),
+             static_cast<unsigned>(s_last_eof_desc),
+             static_cast<unsigned>(s_last_first_word));
 }
 
 const LegacyOps &legacy_ops_esp32s3()
