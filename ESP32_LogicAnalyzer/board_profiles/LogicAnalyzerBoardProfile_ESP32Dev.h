@@ -1,0 +1,28 @@
+#ifndef LOGIC_ANALYZER_BOARD_PROFILE_ESP32DEV_H
+#define LOGIC_ANALYZER_BOARD_PROFILE_ESP32DEV_H
+
+#define LOGIC_ANALYZER_BOARD_NAME "esp32dev"
+
+#define LED_PIN 2
+
+#define CH0_PIN 21
+#define CH1_PIN 19
+#define CH2_PIN 18
+#define CH3_PIN 5
+#define CH4_PIN 4
+#define CH5_PIN 15
+#define CH6_PIN 13
+#define CH7_PIN 12
+#define CH8_PIN 14
+#define CH9_PIN 27
+#define CH10_PIN 26
+#define CH11_PIN 25
+#define CH12_PIN 33
+#define CH13_PIN 32
+#define CH14_PIN 35
+#define CH15_PIN 34
+
+#define CLK_OUT 22
+#define CLK_IN 23
+
+#endif // LOGIC_ANALYZER_BOARD_PROFILE_ESP32DEV_H
