@@ -119,7 +119,7 @@ typedef union
     uint32_t val;
 } dma_elem_t;
 
-typedef struct
+typedef struct logic_analyzer_state_t
 {
     lldesc_t *dma_desc;
     dma_elem_t **dma_buf;
@@ -141,10 +141,20 @@ typedef struct
     //    TaskHandle_t dma_filter_task;
 } logic_analyzer_state_t;
 
+namespace i2s_dma_hal {
+logic_analyzer_state_t *get_logic_state(void *ctx);
+void set_logic_state(void *ctx, logic_analyzer_state_t *state);
+uint32_t get_capture_byte_count(void *ctx);
+}
+
 void IRAM_ATTR i2s_wrapper(void *arg);
 
 class LogicAnalyzer
 {
+    friend logic_analyzer_state_t *i2s_dma_hal::get_logic_state(void *ctx);
+    friend void i2s_dma_hal::set_logic_state(void *ctx, logic_analyzer_state_t *state);
+    friend uint32_t i2s_dma_hal::get_capture_byte_count(void *ctx);
+
 public:
     void begin(void);
     void handleCommand(int cmd);

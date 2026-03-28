@@ -1,4 +1,5 @@
 #include "LogicAnalyzer.h"
+#include "hal/i2s_dma_hal.h"
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #if __has_include("soc/i2s_struct.h")
@@ -236,78 +237,16 @@ void LogicAnalyzer::dma_desc_deinit()
 
 esp_err_t LogicAnalyzer::dma_desc_init(int raw_byte_size)
 {
-    s_state = (logic_analyzer_state_t *)malloc(sizeof(logic_analyzer_state_t));
-    assert(raw_byte_size % 4 == 0);
-
     ESP_LOGD(TAG, "Buffer Total (for DMA): %d bytes", raw_byte_size);
-    size_t dma_desc_count = 1;
-    size_t buf_size = raw_byte_size;
-    /*
-    while (buf_size >= 4096)
-    {
-        buf_size /= 2;
-        dma_desc_count *= 2;
-    }
-    s_state->dma_buf_width = buf_size;
-    s_state->dma_val_per_desc = buf_size/2;
-    s_state->dma_sample_per_desc = buf_size/4;
-    s_state->dma_desc_count = dma_desc_count;
-  */
-    s_state->dma_buf_width = buf_size = 4000;
-    s_state->dma_val_per_desc = 2000;
-    s_state->dma_sample_per_desc = 1000; // 4bytes has only 2bytes sample on 16bit mode.
-    s_state->dma_desc_count = dma_desc_count = raw_byte_size / 4000;
+    esp_err_t err = i2s_dma_hal::allocate_dma_state_buffers(&s_state, raw_byte_size);
+    if (err != ESP_OK)
+        return err;
 
-    ESP_LOGD(TAG, "DMA buffer size: %d", buf_size);
-    ESP_LOGD(TAG, "DMA buffer count: %d", dma_desc_count);
-    ESP_LOGD(TAG, "DMA buffer total: %d bytes", buf_size * dma_desc_count);
-
-    s_state->dma_buf = (dma_elem_t **)malloc(sizeof(dma_elem_t *) * dma_desc_count);
-    if (s_state->dma_buf == NULL)
-    {
-        return ESP_ERR_NO_MEM;
-    }
-    s_state->dma_desc = (lldesc_t *)malloc(sizeof(lldesc_t) * dma_desc_count);
-    if (s_state->dma_desc == NULL)
-    {
-        return ESP_ERR_NO_MEM;
-    }
-    size_t dma_sample_count = 0;
-    for (int i = 0; i < dma_desc_count; ++i)
-    {
-        ESP_LOGD(TAG, "Allocating DMA buffer #%d, size=%d", i, buf_size);
-        dma_elem_t *buf = (dma_elem_t *)malloc(buf_size);
-        if (buf == NULL)
-        {
-            ESP_LOGD(TAG, "NO_MEM!");
-            return ESP_ERR_NO_MEM;
-        }
-        s_state->dma_buf[i] = buf;
-        ESP_LOGV(TAG, "dma_buf[%d]=%p", i, buf);
-
-        lldesc_t *pd = &s_state->dma_desc[i];
-        pd->length = buf_size / 2;
-        dma_sample_count += buf_size / 2; // indeed /4 because each sample is 4 bytes
-        pd->size = buf_size;
-        pd->owner = 1;
-        pd->sosf = 1;
-        pd->buf = (uint8_t *)buf;
-        pd->offset = 0;
-        pd->empty = 0;
-        pd->eof = 0;
-        pd->qe.stqe_next = &s_state->dma_desc[(i + 1) % dma_desc_count];
-        if (i + 1 == dma_desc_count)
-        {
-            pd->eof = 1;
-            pd->qe.stqe_next = 0x0;
-            // pd->eof = 0;
-            // pd->qe.stqe_next = &s_state->dma_desc[0];
-        }
-    }
-    s_state->dma_done = false;
-    s_state->dma_sample_count = dma_sample_count;
-    ESP_LOGD(TAG, "DMA dma_sample_count: %d", dma_sample_count);
-    return ESP_OK;
+    ESP_LOGD(TAG, "DMA buffer size: %d", s_state->dma_buf_width);
+    ESP_LOGD(TAG, "DMA buffer count: %d", s_state->dma_desc_count);
+    ESP_LOGD(TAG, "DMA buffer total: %d bytes", s_state->dma_buf_width * s_state->dma_desc_count);
+    ESP_LOGD(TAG, "DMA dma_sample_count: %d", s_state->dma_sample_count);
+    return err;
 }
 
 void LogicAnalyzer::i2s_conf_reset()
