@@ -64,6 +64,11 @@ void bind_legacy_ops(void *ctx, const LegacyOps &ops)
     s_legacy_ops = ops;
 }
 
+void bind_legacy_context(void *ctx)
+{
+    s_legacy_ctx = ctx;
+}
+
 esp_err_t dma_desc_init(int raw_byte_size)
 {
     if (!s_legacy_ops.dma_desc_init)
@@ -118,7 +123,7 @@ esp_err_t allocate_dma_state_buffers(logic_analyzer_state_t **state, int raw_byt
 
     assert(raw_byte_size % 4 == 0);
 
-    size_t dma_desc_count = raw_byte_size / 4000;
+    size_t dma_desc_count = (raw_byte_size + 3999) / 4000;
     size_t buf_size = 4000;
     new_state->dma_buf_width = buf_size;
     new_state->dma_val_per_desc = 2000;

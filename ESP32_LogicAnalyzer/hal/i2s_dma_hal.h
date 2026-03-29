@@ -24,6 +24,7 @@ struct LegacyOps {
 };
 
 void bind_legacy_ops(void *ctx, const LegacyOps &ops);
+void bind_legacy_context(void *ctx);
 esp_err_t dma_desc_init(int raw_byte_size);
 void i2s_parallel_setup(const i2s_parallel_config_t *cfg);
 void start_dma_capture();

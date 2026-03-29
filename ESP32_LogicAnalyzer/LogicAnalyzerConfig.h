@@ -11,11 +11,22 @@
 // ========================================
 
 #ifdef _DEBUG_MODE_
-  #define OLS_Port Serial2
-  #define OLS_Port_Baud 3000000
+  #if defined(CONFIG_IDF_TARGET_ESP32S3)
+    // ESP32-S3 DevKitC-1 dual-USB split:
+    // - OLS_Port on native USB (USBSerial) for PulseView/SUMP
+    // - Serial_Debug_Port on UART0/USB bridge for logs
+    #define OLS_Port USBSerial
+    #define OLS_Port_Baud 3000000
 
-  #define Serial_Debug_Port Serial
-  #define Serial_Debug_Port_Baud 921600
+    #define Serial_Debug_Port Serial
+    #define Serial_Debug_Port_Baud 921600
+  #else
+    #define OLS_Port Serial2
+    #define OLS_Port_Baud 3000000
+
+    #define Serial_Debug_Port Serial
+    #define Serial_Debug_Port_Baud 921600
+  #endif
 #else
   #define OLS_Port Serial   
   #define OLS_Port_Baud 921600

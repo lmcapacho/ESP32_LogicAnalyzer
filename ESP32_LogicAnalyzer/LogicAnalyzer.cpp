@@ -55,6 +55,8 @@ void LogicAnalyzer::begin()
     if (!i2s_dma_hal::init(hal_cfg))
         return;
 
+    i2s_dma_hal::bind_legacy_context(this);
+
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
     i2s_dma_hal::LegacyOps legacy_ops;
     legacy_ops.dma_desc_init = &LogicAnalyzer::hal_dma_desc_init_bridge;
@@ -342,8 +344,22 @@ void LogicAnalyzer::captureMilli()
 #endif
     delay(100); // this delay is strictly need for error free capturing...
 
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+    unsigned long capture_wait_start_ms = millis();
+    while (!s_state->dma_done)
+    {
+        if (millis() - capture_wait_start_ms > 2000)
+        {
+            ESP_LOGW(TAG, "ESP32-S3 capture timeout waiting for DMA EOF");
+            s_state->dma_done = true;
+            break;
+        }
+        delay(50);
+    }
+#else
     while (!s_state->dma_done)
         delay(100);
+#endif
     i2s_dma_hal::stop();
 
     yield();

@@ -5,14 +5,16 @@
 #include "driver/periph_ctrl.h"
 #include "esp_heap_caps.h"
 #include "esp_private/gdma.h"
+#include "esp_private/gpio.h"
 #include "esp_log.h"
 #include "hal/dma_types.h"
+#include "driver/gpio.h"
 #include "soc/gpio_sig_map.h"
 #include "soc/lcd_cam_struct.h"
-#if __has_include("esp32s3/rom/gpio.h")
-#include "esp32s3/rom/gpio.h"
-#elif __has_include("esp_rom_gpio.h")
+#if __has_include("esp_rom_gpio.h")
 #include "esp_rom_gpio.h"
+#elif __has_include("esp32s3/rom/gpio.h")
+#include "esp32s3/rom/gpio.h"
 #endif
 #if __has_include("soc/io_mux_reg.h")
 #include "soc/io_mux_reg.h"
@@ -63,6 +65,20 @@ inline void cam_start_streaming()
 {
     cam_reset_and_fifo();
     LCD_CAM.cam_ctrl1.cam_start = 1;
+}
+
+inline void route_cam_control_idle()
+{
+    esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_LOW, CAM_V_SYNC_IDX, false);
+    esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_HIGH, CAM_H_ENABLE_IDX, false);
+    esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_HIGH, CAM_H_SYNC_IDX, false);
+}
+
+inline void route_cam_control_active()
+{
+    esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_HIGH, CAM_V_SYNC_IDX, false);
+    esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_HIGH, CAM_H_ENABLE_IDX, false);
+    esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_HIGH, CAM_H_SYNC_IDX, false);
 }
 
 void configure_dma_descriptors(logic_analyzer_state_t *state)
@@ -118,9 +134,10 @@ void gpio_setup_in_s3(int gpio, int sig)
 {
     if (gpio < 0)
         return;
-    PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[gpio], PIN_FUNC_GPIO);
-    gpio_set_direction((gpio_num_t)gpio, (gpio_mode_t)GPIO_MODE_DEF_INPUT);
-    gpio_matrix_in(gpio, sig, false);
+    esp_rom_gpio_pad_select_gpio(gpio);
+    gpio_set_direction((gpio_num_t)gpio, GPIO_MODE_INPUT);
+    gpio_set_pull_mode((gpio_num_t)gpio, GPIO_FLOATING);
+    esp_rom_gpio_connect_in_signal(gpio, sig, false);
 }
 } // namespace
 
@@ -155,8 +172,6 @@ static esp_err_t dma_desc_init_s3(void *ctx, int raw_byte_size)
     configure_dma_descriptors(state);
 
     set_logic_state(ctx, state);
-    ESP_LOGI(S3_HAL_TAG, "Allocated DMA state for ESP32-S3 (%d bytes requested, %u dma nodes)",
-             raw_byte_size, static_cast<unsigned>(s_s3.dma_desc_count));
     return ESP_OK;
 }
 
@@ -165,8 +180,6 @@ static void i2s_parallel_setup_s3(void *ctx, const i2s_parallel_config_t *cfg)
     (void)ctx;
     if (!cfg)
         return;
-
-    ESP_LOGI(S3_HAL_TAG, "Setting up ESP32-S3 LCD_CAM parallel input backend");
 
     periph_module_enable(PERIPH_LCD_CAM_MODULE);
 
@@ -222,7 +235,10 @@ static void i2s_parallel_setup_s3(void *ctx, const i2s_parallel_config_t *cfg)
 
     LCD_CAM.cam_ctrl1.cam_clk_inv = 0;
     LCD_CAM.cam_ctrl1.cam_2byte_en = 0;
-    LCD_CAM.cam_ctrl1.cam_vh_de_mode_en = 0;
+    LCD_CAM.cam_ctrl1.cam_de_inv = 0;
+    LCD_CAM.cam_ctrl1.cam_hsync_inv = 0;
+    LCD_CAM.cam_ctrl1.cam_vsync_inv = 0;
+    LCD_CAM.cam_ctrl1.cam_vh_de_mode_en = 1;
     LCD_CAM.cam_ctrl1.cam_start = 0;
     LCD_CAM.cam_ctrl1.cam_rec_data_bytelen = 0;
 
@@ -234,27 +250,15 @@ static void i2s_parallel_setup_s3(void *ctx, const i2s_parallel_config_t *cfg)
     gpio_setup_in_s3(cfg->gpio_bus[5], CAM_DATA_IN5_IDX);
     gpio_setup_in_s3(cfg->gpio_bus[6], CAM_DATA_IN6_IDX);
     gpio_setup_in_s3(cfg->gpio_bus[7], CAM_DATA_IN7_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[8], CAM_DATA_IN8_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[9], CAM_DATA_IN9_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[10], CAM_DATA_IN10_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[11], CAM_DATA_IN11_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[12], CAM_DATA_IN12_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[13], CAM_DATA_IN13_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[14], CAM_DATA_IN14_IDX);
-    gpio_setup_in_s3(cfg->gpio_bus[15], CAM_DATA_IN15_IDX);
     gpio_setup_in_s3(cfg->gpio_clk_in, CAM_PCLK_IDX);
 
-    // Keep sync/control lines inactive while we validate raw PCLK+DATA capture.
-    gpio_matrix_in(0x38, CAM_V_SYNC_IDX, false);
-    gpio_matrix_in(0x38, CAM_H_SYNC_IDX, false);
-    gpio_matrix_in(0x38, CAM_H_ENABLE_IDX, false);
+    route_cam_control_idle();
 
     s_s3.dma_ready = (s_s3.dma_chan != nullptr);
 }
 
-static void start_dma_capture_s3(void *ctx)
+static void start_dma_capture_s3_state(logic_analyzer_state_t *state, size_t capture_bytes)
 {
-    logic_analyzer_state_t *state = get_logic_state(ctx);
     if (!state)
         return;
 
@@ -282,27 +286,14 @@ static void start_dma_capture_s3(void *ctx)
         return;
     }
 
+    if (capture_bytes == 0)
+        capture_bytes = state->dma_buf_width;
+
     cam_reset_and_fifo();
     LCD_CAM.lc_dma_int_clr.val = 0xFFFFFFFF;
     LCD_CAM.cam_ctrl.cam_update = 1;
-
-    size_t capture_bytes = get_capture_byte_count(ctx);
-    if (capture_bytes == 0)
-        capture_bytes = state->dma_buf_width;
-    if (capture_bytes == 0)
-        capture_bytes = state->dma_buf_width;
     LCD_CAM.cam_ctrl.cam_vs_eof_en = 0;
     LCD_CAM.cam_ctrl1.cam_rec_data_bytelen = capture_bytes - 1;
-
-    ESP_LOGI(S3_HAL_TAG,
-             "cam_ctrl=0x%08x cam_ctrl1=0x%08x bytes=%u clk_in=%d mode_vhde=%u clk_inv=%u two_byte=%u",
-             LCD_CAM.cam_ctrl.val,
-             LCD_CAM.cam_ctrl1.val,
-             static_cast<unsigned>(capture_bytes),
-             s_cfg.gpio_clk_in,
-             static_cast<unsigned>(LCD_CAM.cam_ctrl1.cam_vh_de_mode_en),
-             static_cast<unsigned>(LCD_CAM.cam_ctrl1.cam_clk_inv),
-             static_cast<unsigned>(LCD_CAM.cam_ctrl1.cam_2byte_en));
 
     configure_dma_descriptors(state);
 
@@ -313,8 +304,17 @@ static void start_dma_capture_s3(void *ctx)
         return;
     }
 
+    route_cam_control_idle();
     cam_start_streaming();
-    ESP_LOGI(S3_HAL_TAG, "Started ESP32-S3 LCD_CAM capture (%u bytes)", static_cast<unsigned>(capture_bytes));
+    route_cam_control_active();
+}
+
+static void start_dma_capture_s3(void *ctx)
+{
+    logic_analyzer_state_t *state = get_logic_state(ctx);
+    if (!state)
+        return;
+    start_dma_capture_s3_state(state, get_capture_byte_count(ctx));
 }
 
 bool init_esp32s3(const Config &cfg)
@@ -329,12 +329,9 @@ void start_esp32s3() {}
 void stop_esp32s3()
 {
     cam_stop_streaming();
+    route_cam_control_idle();
     if (s_s3.dma_chan)
         gdma_stop(s_s3.dma_chan);
-    ESP_LOGI(S3_HAL_TAG, "S3 capture summary: eof_count=%u last_desc=0x%08x first_word=0x%08x",
-             static_cast<unsigned>(s_s3.eof_count),
-             static_cast<unsigned>(s_s3.last_eof_desc),
-             static_cast<unsigned>(s_s3.last_first_word));
 }
 
 const LegacyOps &legacy_ops_esp32s3()
