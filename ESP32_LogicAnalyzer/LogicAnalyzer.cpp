@@ -49,15 +49,11 @@ void LogicAnalyzer::hal_start_dma_capture_bridge(void *ctx)
 
 void LogicAnalyzer::begin()
 {
-    i2s_dma_hal::Config hal_cfg;
-    hal_cfg.gpio_clk_in = CLK_IN;
-    hal_cfg.bits = I2S_PARALLEL_BITS_16;
-
-    i2s_dma_hal::LegacyOps legacy_ops = {};
+    capture_backend::Hooks backend_hooks = {};
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-    legacy_ops.dma_desc_init = &LogicAnalyzer::hal_dma_desc_init_bridge;
-    legacy_ops.i2s_parallel_setup = &LogicAnalyzer::hal_i2s_parallel_setup_bridge;
-    legacy_ops.start_dma_capture = &LogicAnalyzer::hal_start_dma_capture_bridge;
+    backend_hooks.allocate_state = &LogicAnalyzer::hal_dma_desc_init_bridge;
+    backend_hooks.configure_bus = &LogicAnalyzer::hal_i2s_parallel_setup_bridge;
+    backend_hooks.arm_capture = &LogicAnalyzer::hal_start_dma_capture_bridge;
 #endif
 
     i2s_parallel_config_t cfg;
@@ -113,13 +109,14 @@ void LogicAnalyzer::begin()
     // fill_dma_desc( bufdesc );
     capture_backend::InitConfig backend_cfg = {};
     backend_cfg.ctx = this;
-    backend_cfg.hal = hal_cfg;
+    backend_cfg.gpio_clk_in = CLK_IN;
+    backend_cfg.bits = I2S_PARALLEL_BITS_16;
     backend_cfg.parallel = &cfg;
     backend_cfg.raw_byte_size = CAPTURE_SIZE;
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
-    backend_cfg.legacy_ops = nullptr;
+    backend_cfg.hooks = nullptr;
 #else
-    backend_cfg.legacy_ops = &legacy_ops;
+    backend_cfg.hooks = &backend_hooks;
 #endif
     if (!capture_backend::init(backend_cfg))
     {
@@ -337,31 +334,7 @@ void LogicAnalyzer::captureMilli()
     ESP_LOGD(TAG, "dma_sample_count: %d", s_state->dma_sample_count);
     rle_init();
 
-    i2s_dma_hal::start_dma_capture();
-    i2s_dma_hal::start();
-    yield();
-#if !defined(CONFIG_IDF_TARGET_ESP32S3)
-    I2S0.conf.rx_start = 1;
-#endif
-    delay(100); // this delay is strictly need for error free capturing...
-
-#if defined(CONFIG_IDF_TARGET_ESP32S3)
-    unsigned long capture_wait_start_ms = millis();
-    while (!s_state->dma_done)
-    {
-        if (millis() - capture_wait_start_ms > 2000)
-        {
-            ESP_LOGW(TAG, "ESP32-S3 capture timeout waiting for DMA EOF");
-            s_state->dma_done = true;
-            break;
-        }
-        delay(50);
-    }
-#else
-    while (!s_state->dma_done)
-        delay(100);
-#endif
-    i2s_dma_hal::stop();
+    capture_backend::capture(this, 2000);
 
     yield();
 

@@ -7,7 +7,7 @@
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #include "esp32/i2s_dma_hal_esp32.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-#include "esp32s3/i2s_dma_hal_esp32s3.h"
+#include "esp32s3/capture_backend_esp32s3.h"
 #endif
 
 namespace i2s_dma_hal {
@@ -22,11 +22,11 @@ bool init(const Config &cfg)
     s_initialized = init_esp32(cfg);
     return s_initialized;
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    s_initialized = init_esp32s3(cfg);
+    s_initialized = capture_backend_esp32s3::init(cfg);
     if (s_initialized)
     {
         s_legacy_ctx = nullptr;
-        s_legacy_ops = legacy_ops_esp32s3();
+        s_legacy_ops = {};
     }
     return s_initialized;
 #else
@@ -43,7 +43,7 @@ void start()
 #if defined(CONFIG_IDF_TARGET_ESP32)
     start_esp32();
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    start_esp32s3();
+    capture_backend_esp32s3::start();
 #endif
 }
 
@@ -54,7 +54,7 @@ void stop()
 #if defined(CONFIG_IDF_TARGET_ESP32)
     stop_esp32();
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
-    stop_esp32s3();
+    capture_backend_esp32s3::stop();
 #endif
 }
 
