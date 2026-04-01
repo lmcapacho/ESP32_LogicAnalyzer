@@ -1,5 +1,6 @@
 #include "LogicAnalyzer.h"
 #include "hal/i2s_dma_hal.h"
+#include "hal/capture_backend.h"
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #if __has_include("soc/i2s_struct.h")
 #include "soc/i2s_struct.h"
@@ -52,17 +53,11 @@ void LogicAnalyzer::begin()
     hal_cfg.gpio_clk_in = CLK_IN;
     hal_cfg.bits = I2S_PARALLEL_BITS_16;
 
-    if (!i2s_dma_hal::init(hal_cfg))
-        return;
-
-    i2s_dma_hal::bind_legacy_context(this);
-
+    i2s_dma_hal::LegacyOps legacy_ops = {};
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-    i2s_dma_hal::LegacyOps legacy_ops;
     legacy_ops.dma_desc_init = &LogicAnalyzer::hal_dma_desc_init_bridge;
     legacy_ops.i2s_parallel_setup = &LogicAnalyzer::hal_i2s_parallel_setup_bridge;
     legacy_ops.start_dma_capture = &LogicAnalyzer::hal_start_dma_capture_bridge;
-    i2s_dma_hal::bind_legacy_ops(this, legacy_ops);
 #endif
 
     i2s_parallel_config_t cfg;
@@ -78,13 +73,6 @@ void LogicAnalyzer::begin()
     // btStop();
 
     pinMode(LED_PIN, OUTPUT);
-
-    esp_err_t dma_init_err = i2s_dma_hal::dma_desc_init(CAPTURE_SIZE);
-    if (dma_init_err != ESP_OK)
-    {
-        capture_backend_ready = false;
-        return;
-    }
 
     // GPIO01 used for UART 0 RX, able to use it if you select different UART port (1,2) as OLS_Port
     // GPIO03 used for UART 0 TX
@@ -112,20 +100,32 @@ void LogicAnalyzer::begin()
     cfg.gpio_bus[13] = CH13_PIN;
     cfg.gpio_bus[14] = CH14_PIN;
     cfg.gpio_bus[15] = CH15_PIN;
-
     cfg.gpio_clk_out = CLK_OUT; // Used for LedC output
     cfg.gpio_clk_in = CLK_IN;   // Used for XCK input from LedC
 
     // GPIO 20,24,28,29,30,31 results bootloop
 
-    // cfg.bits = I2S_PARALLEL_BITS_8; //not implemented yet...
     cfg.bits = I2S_PARALLEL_BITS_16;
     cfg.clkspeed_hz = 2 * 1000 * 1000; // resulting pixel clock = 1MHz
     cfg.buf = &bufdesc;
 
     // enable_out_clock(I2S_HZ);
     // fill_dma_desc( bufdesc );
-    i2s_dma_hal::i2s_parallel_setup(&cfg);
+    capture_backend::InitConfig backend_cfg = {};
+    backend_cfg.ctx = this;
+    backend_cfg.hal = hal_cfg;
+    backend_cfg.parallel = &cfg;
+    backend_cfg.raw_byte_size = CAPTURE_SIZE;
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+    backend_cfg.legacy_ops = nullptr;
+#else
+    backend_cfg.legacy_ops = &legacy_ops;
+#endif
+    if (!capture_backend::init(backend_cfg))
+    {
+        capture_backend_ready = false;
+        return;
+    }
 }
 
 void LogicAnalyzer::handleCommand(int cmdByte)
@@ -250,6 +250,7 @@ void LogicAnalyzer::handleCommand(int cmdByte)
         break;
     }
 }
+
 
 void LogicAnalyzer::getCmd(byte *cmdBytes)
 {
