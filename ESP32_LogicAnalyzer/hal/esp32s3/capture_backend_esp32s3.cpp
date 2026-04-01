@@ -30,17 +30,22 @@
 namespace capture_backend_esp32s3 {
 
 namespace {
-constexpr const char *S3_HAL_TAG = "i2s_dma_hal_s3";
+constexpr const char *S3_HAL_TAG = "capture_backend_s3";
+constexpr size_t kS3DmaChunkBytes = 4000;
 i2s_dma_hal::Config s_cfg = {};
 bool s_cfg_valid = false;
 bool s_warned_not_supported = false;
 struct S3BackendState {
     gdma_channel_handle_t dma_chan = nullptr;
     dma_descriptor_t *dma_desc = nullptr;
+    uint8_t **frame_buf = nullptr;
+    size_t *frame_size = nullptr;
     size_t dma_desc_count = 0;
     size_t dma_desc_bytes = 0;
-    logic_analyzer_state_t *active_state = nullptr;
+    size_t raw_byte_size = 0;
     bool dma_ready = false;
+    volatile bool capture_done = false;
+    volatile size_t completed_desc_count = 0;
     volatile uint32_t eof_count = 0;
     volatile intptr_t last_eof_desc = 0;
     volatile uint32_t last_first_word = 0;
@@ -81,32 +86,113 @@ inline void route_cam_control_active()
     esp_rom_gpio_connect_in_signal(GPIO_FUNC_IN_HIGH, CAM_H_SYNC_IDX, false);
 }
 
-void configure_dma_descriptors(logic_analyzer_state_t *state)
+size_t calc_dma_desc_count(size_t raw_byte_size)
 {
-    if (!s_s3.dma_desc || !state)
+    return (raw_byte_size + (kS3DmaChunkBytes - 1)) / kS3DmaChunkBytes;
+}
+
+size_t calc_dma_chunk_size(size_t raw_byte_size, size_t index, size_t desc_count)
+{
+    if (index + 1 < desc_count)
+        return kS3DmaChunkBytes;
+    const size_t used = index * kS3DmaChunkBytes;
+    return raw_byte_size - used;
+}
+
+void free_frame_storage()
+{
+    if (s_s3.frame_buf)
+    {
+        for (size_t i = 0; i < s_s3.dma_desc_count; ++i)
+            heap_caps_free(s_s3.frame_buf[i]);
+        heap_caps_free(s_s3.frame_buf);
+        s_s3.frame_buf = nullptr;
+    }
+    if (s_s3.frame_size)
+    {
+        heap_caps_free(s_s3.frame_size);
+        s_s3.frame_size = nullptr;
+    }
+    if (s_s3.dma_desc)
+    {
+        heap_caps_free(s_s3.dma_desc);
+        s_s3.dma_desc = nullptr;
+    }
+    s_s3.dma_desc_count = 0;
+    s_s3.dma_desc_bytes = 0;
+    s_s3.raw_byte_size = 0;
+}
+
+esp_err_t ensure_frame_storage(size_t raw_byte_size)
+{
+    if (raw_byte_size == 0)
+        return ESP_ERR_INVALID_ARG;
+
+    const size_t desc_count = calc_dma_desc_count(raw_byte_size);
+    if (s_s3.dma_desc && s_s3.frame_buf && s_s3.frame_size &&
+        s_s3.dma_desc_count == desc_count && s_s3.raw_byte_size == raw_byte_size)
+        return ESP_OK;
+
+    free_frame_storage();
+
+    s_s3.dma_desc_count = desc_count;
+    s_s3.dma_desc_bytes = desc_count * sizeof(dma_descriptor_t);
+    s_s3.raw_byte_size = raw_byte_size;
+    s_s3.frame_buf = static_cast<uint8_t **>(heap_caps_calloc(desc_count, sizeof(uint8_t *), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    s_s3.frame_size = static_cast<size_t *>(heap_caps_calloc(desc_count, sizeof(size_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    s_s3.dma_desc = static_cast<dma_descriptor_t *>(heap_caps_calloc(desc_count, sizeof(dma_descriptor_t), MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    if (!s_s3.frame_buf || !s_s3.frame_size || !s_s3.dma_desc)
+        return ESP_ERR_NO_MEM;
+
+    for (size_t i = 0; i < desc_count; ++i)
+    {
+        s_s3.frame_size[i] = calc_dma_chunk_size(raw_byte_size, i, desc_count);
+        s_s3.frame_buf[i] = static_cast<uint8_t *>(heap_caps_malloc(s_s3.frame_size[i], MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+        if (!s_s3.frame_buf[i])
+            return ESP_ERR_NO_MEM;
+    }
+    return ESP_OK;
+}
+
+void configure_dma_descriptors()
+{
+    if (!s_s3.dma_desc || !s_s3.frame_buf || !s_s3.frame_size)
         return;
 
     for (size_t i = 0; i < s_s3.dma_desc_count; ++i)
     {
         dma_descriptor_t &desc = s_s3.dma_desc[i];
-        desc.dw0.size = state->dma_desc[i].size;
+        desc.dw0.size = s_s3.frame_size[i];
         desc.dw0.length = 0;
         desc.dw0.err_eof = 0;
         desc.dw0.suc_eof = (i + 1 == s_s3.dma_desc_count);
         desc.dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
-        desc.buffer = reinterpret_cast<uint8_t *>(state->dma_buf[i]);
+        desc.buffer = s_s3.frame_buf[i];
         desc.next = (i + 1 < s_s3.dma_desc_count) ? &s_s3.dma_desc[i + 1] : nullptr;
     }
+}
+
+void clear_frame_buffers()
+{
+    if (!s_s3.frame_buf || !s_s3.frame_size)
+        return;
+    for (size_t i = 0; i < s_s3.dma_desc_count; ++i)
+        memset(s_s3.frame_buf[i], 0, s_s3.frame_size[i]);
+}
+
+void copy_frame_to_logic_state_impl(logic_analyzer_state_t *state)
+{
+    if (!s_s3.frame_buf || !s_s3.frame_size || !state || !state->dma_buf)
+        return;
+    const size_t copy_desc = (state->dma_desc_count < s_s3.dma_desc_count) ? state->dma_desc_count : s_s3.dma_desc_count;
+    for (size_t i = 0; i < copy_desc; ++i)
+        memcpy(state->dma_buf[i], s_s3.frame_buf[i], s_s3.frame_size[i]);
 }
 
 bool IRAM_ATTR on_gdma_recv_eof_s3(gdma_channel_handle_t dma_chan, gdma_event_data_t *event_data, void *user_data)
 {
     (void)dma_chan;
     (void)user_data;
-    logic_analyzer_state_t *state = s_s3.active_state;
-    if (!state)
-        return false;
-
     intptr_t eof_addr = event_data ? event_data->rx_eof_desc_addr : 0;
     s_s3.eof_count++;
     s_s3.last_eof_desc = eof_addr;
@@ -115,18 +201,18 @@ bool IRAM_ATTR on_gdma_recv_eof_s3(gdma_channel_handle_t dma_chan, gdma_event_da
         eof_addr < reinterpret_cast<intptr_t>(&s_s3.dma_desc[s_s3.dma_desc_count]))
     {
         dma_descriptor_t *eof_desc = reinterpret_cast<dma_descriptor_t *>(eof_addr);
-        state->dma_desc_cur = static_cast<size_t>(eof_desc - s_s3.dma_desc) + 1;
+        s_s3.completed_desc_count = static_cast<size_t>(eof_desc - s_s3.dma_desc) + 1;
     }
     else
     {
-        state->dma_desc_cur = state->dma_desc_count;
+        s_s3.completed_desc_count = s_s3.dma_desc_count;
     }
 
-    if (state->dma_buf && state->dma_buf[0])
-        s_s3.last_first_word = reinterpret_cast<uint32_t *>(state->dma_buf[0])[0];
+    if (s_s3.frame_buf && s_s3.frame_buf[0])
+        s_s3.last_first_word = reinterpret_cast<uint32_t *>(s_s3.frame_buf[0])[0];
 
     cam_stop_streaming();
-    state->dma_done = true;
+    s_s3.capture_done = true;
     return false;
 }
 
@@ -141,43 +227,8 @@ void gpio_setup_in_s3(int gpio, int sig)
 }
 } // namespace
 
-static esp_err_t dma_desc_init_s3(void *ctx, int raw_byte_size)
+static void i2s_parallel_setup_s3(const i2s_parallel_config_t *cfg)
 {
-    if (!s_cfg_valid)
-        return ESP_ERR_INVALID_STATE;
-
-    if (raw_byte_size <= 0)
-        return ESP_ERR_INVALID_ARG;
-
-    logic_analyzer_state_t *state = nullptr;
-    esp_err_t err = i2s_dma_hal::allocate_dma_state_buffers(&state, raw_byte_size);
-    if (err != ESP_OK)
-        return err;
-
-    if (s_s3.dma_desc)
-    {
-        heap_caps_free(s_s3.dma_desc);
-        s_s3.dma_desc = nullptr;
-        s_s3.dma_desc_count = 0;
-        s_s3.dma_desc_bytes = 0;
-    }
-
-    s_s3.dma_desc_count = state->dma_desc_count;
-    s_s3.dma_desc_bytes = s_s3.dma_desc_count * sizeof(dma_descriptor_t);
-    s_s3.dma_desc = static_cast<dma_descriptor_t *>(
-        heap_caps_calloc(s_s3.dma_desc_count, sizeof(dma_descriptor_t), MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-    if (!s_s3.dma_desc)
-        return ESP_ERR_NO_MEM;
-
-    configure_dma_descriptors(state);
-
-    i2s_dma_hal::set_logic_state(ctx, state);
-    return ESP_OK;
-}
-
-static void i2s_parallel_setup_s3(void *ctx, const i2s_parallel_config_t *cfg)
-{
-    (void)ctx;
     if (!cfg)
         return;
 
@@ -206,7 +257,7 @@ static void i2s_parallel_setup_s3(void *ctx, const i2s_parallel_config_t *cfg)
 
         gdma_rx_event_callbacks_t cbs = {};
         cbs.on_recv_eof = on_gdma_recv_eof_s3;
-        if (gdma_register_rx_event_callbacks(s_s3.dma_chan, &cbs, ctx) != ESP_OK ||
+        if (gdma_register_rx_event_callbacks(s_s3.dma_chan, &cbs, nullptr) != ESP_OK ||
             gdma_connect(s_s3.dma_chan, GDMA_MAKE_TRIGGER(GDMA_TRIG_PERIPH_CAM, 0)) != ESP_OK)
         {
             ESP_LOGE(S3_HAL_TAG, "Failed to configure GDMA RX channel for LCD_CAM");
@@ -257,23 +308,15 @@ static void i2s_parallel_setup_s3(void *ctx, const i2s_parallel_config_t *cfg)
     s_s3.dma_ready = (s_s3.dma_chan != nullptr);
 }
 
-static void start_dma_capture_s3_state(logic_analyzer_state_t *state, size_t capture_bytes)
+static void start_dma_capture_s3(size_t capture_bytes)
 {
-    if (!state)
-        return;
-
-    s_s3.active_state = state;
     s_s3.eof_count = 0;
     s_s3.last_eof_desc = 0;
     s_s3.last_first_word = 0;
-    state->dma_done = false;
-    state->dma_desc_cur = 0;
-    state->dma_received_count = 0;
-    state->dma_filtered_count = 0;
-    state->dma_desc_triggered = -1;
+    s_s3.capture_done = false;
+    s_s3.completed_desc_count = 0;
 
-    for (size_t i = 0; i < state->dma_desc_count; ++i)
-        memset(state->dma_buf[i], 0, state->dma_desc[i].size);
+    clear_frame_buffers();
 
     if (!s_s3.dma_ready || !s_s3.dma_chan || !s_s3.dma_desc)
     {
@@ -282,12 +325,12 @@ static void start_dma_capture_s3_state(logic_analyzer_state_t *state, size_t cap
             ESP_LOGW(S3_HAL_TAG, "ESP32-S3 GDMA backend is not ready; returning zeroed samples");
             s_warned_not_supported = true;
         }
-        state->dma_done = true;
+        s_s3.capture_done = true;
         return;
     }
 
     if (capture_bytes == 0)
-        capture_bytes = state->dma_buf_width;
+        capture_bytes = s_s3.raw_byte_size;
 
     cam_reset_and_fifo();
     LCD_CAM.lc_dma_int_clr.val = 0xFFFFFFFF;
@@ -295,26 +338,18 @@ static void start_dma_capture_s3_state(logic_analyzer_state_t *state, size_t cap
     LCD_CAM.cam_ctrl.cam_vs_eof_en = 0;
     LCD_CAM.cam_ctrl1.cam_rec_data_bytelen = capture_bytes - 1;
 
-    configure_dma_descriptors(state);
+    configure_dma_descriptors();
 
     if (gdma_reset(s_s3.dma_chan) != ESP_OK || gdma_start(s_s3.dma_chan, reinterpret_cast<intptr_t>(s_s3.dma_desc)) != ESP_OK)
     {
         ESP_LOGE(S3_HAL_TAG, "Failed to start GDMA RX capture on ESP32-S3");
-        state->dma_done = true;
+        s_s3.capture_done = true;
         return;
     }
 
     route_cam_control_idle();
     cam_start_streaming();
     route_cam_control_active();
-}
-
-static void start_dma_capture_s3(void *ctx)
-{
-    logic_analyzer_state_t *state = i2s_dma_hal::get_logic_state(ctx);
-    if (!state)
-        return;
-    start_dma_capture_s3_state(state, i2s_dma_hal::get_capture_byte_count(ctx));
 }
 
 bool init(const i2s_dma_hal::Config &cfg)
@@ -334,40 +369,42 @@ void stop()
         gdma_stop(s_s3.dma_chan);
 }
 
-bool configure(void *ctx, const i2s_parallel_config_t *cfg, int raw_byte_size)
+bool configure(const i2s_parallel_config_t *cfg, int raw_byte_size)
 {
     if (!cfg || !s_cfg_valid)
         return false;
 
-    if (dma_desc_init_s3(ctx, raw_byte_size) != ESP_OK)
+    if (ensure_frame_storage(raw_byte_size) != ESP_OK)
         return false;
 
-    i2s_parallel_setup_s3(ctx, cfg);
+    configure_dma_descriptors();
+    i2s_parallel_setup_s3(cfg);
     return s_s3.dma_ready;
 }
 
-bool capture(void *ctx, uint32_t timeout_ms)
+Result capture(size_t capture_bytes, uint32_t timeout_ms)
 {
-    logic_analyzer_state_t *state = i2s_dma_hal::get_logic_state(ctx);
-    if (!state)
-        return false;
-
-    start_dma_capture_s3_state(state, i2s_dma_hal::get_capture_byte_count(ctx));
+    start_dma_capture_s3(capture_bytes);
 
     const unsigned long start_ms = millis();
-    while (!state->dma_done)
+    while (!s_s3.capture_done)
     {
         if (millis() - start_ms > timeout_ms)
         {
             ESP_LOGW(S3_HAL_TAG, "ESP32-S3 capture timeout waiting for DMA EOF");
-            state->dma_done = true;
+            s_s3.capture_done = true;
             break;
         }
         delay(50);
     }
 
     stop();
-    return state->dma_done;
+    return Result{ s_s3.capture_done, s_s3.completed_desc_count };
+}
+
+void copy_to_logic_state(logic_analyzer_state_t *state)
+{
+    copy_frame_to_logic_state_impl(state);
 }
 
 } // namespace capture_backend_esp32s3

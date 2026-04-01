@@ -35,7 +35,11 @@ bool init(const InitConfig &cfg)
     i2s_dma_hal::bind_legacy_context(cfg.ctx);
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
-    return capture_backend_esp32s3::configure(cfg.ctx, cfg.parallel, cfg.raw_byte_size);
+    logic_analyzer_state_t *state = nullptr;
+    if (i2s_dma_hal::allocate_dma_state_buffers(&state, cfg.raw_byte_size) != ESP_OK)
+        return false;
+    i2s_dma_hal::set_logic_state(cfg.ctx, state);
+    return capture_backend_esp32s3::configure(cfg.parallel, cfg.raw_byte_size);
 #else
     i2s_dma_hal::LegacyOps legacy_ops = {};
     if (cfg.hooks)
@@ -57,14 +61,22 @@ bool init(const InitConfig &cfg)
 #endif
 }
 
-bool capture(void *ctx, uint32_t timeout_ms)
+Result capture(void *ctx, uint32_t timeout_ms)
 {
     logic_analyzer_state_t *state = i2s_dma_hal::get_logic_state(ctx);
     if (!state)
-        return false;
+        return Result{false, 0};
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
-    return capture_backend_esp32s3::capture(ctx, timeout_ms);
+    const Result result = [&]() {
+        const auto native = capture_backend_esp32s3::capture(i2s_dma_hal::get_capture_byte_count(ctx), timeout_ms);
+        state->dma_done = native.done;
+        state->dma_desc_cur = native.completed_desc_count;
+        if (native.done)
+            capture_backend_esp32s3::copy_to_logic_state(state);
+        return Result{native.done, native.completed_desc_count};
+    }();
+    return result;
 #else
     i2s_dma_hal::start_dma_capture();
     i2s_dma_hal::start();
@@ -76,7 +88,7 @@ bool capture(void *ctx, uint32_t timeout_ms)
         delay(100);
 
     i2s_dma_hal::stop();
-    return state->dma_done;
+    return Result{state->dma_done, state->dma_desc_cur};
 #endif
 }
 

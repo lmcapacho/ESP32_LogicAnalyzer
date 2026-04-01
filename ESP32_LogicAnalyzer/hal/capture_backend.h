@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
+#include <stddef.h>
 
 struct i2s_parallel_config_t;
 
@@ -21,7 +22,12 @@ struct InitConfig {
     const Hooks *hooks;
 };
 
+struct Result {
+    bool done;
+    size_t completed_desc_count;
+};
+
 bool init(const InitConfig &cfg);
-bool capture(void *ctx, uint32_t timeout_ms);
+Result capture(void *ctx, uint32_t timeout_ms);
 
 } // namespace capture_backend

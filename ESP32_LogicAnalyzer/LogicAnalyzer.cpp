@@ -334,7 +334,8 @@ void LogicAnalyzer::captureMilli()
     ESP_LOGD(TAG, "dma_sample_count: %d", s_state->dma_sample_count);
     rle_init();
 
-    capture_backend::capture(this, 2000);
+    const auto capture_result = capture_backend::capture(this, 2000);
+    (void)capture_result;
 
     yield();
 
