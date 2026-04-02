@@ -12,11 +12,7 @@
 #include "soc/gpio_sig_map.h"
 #include "soc/lcd_cam_struct.h"
 #include "soc/periph_defs.h"
-#if __has_include("esp_rom_gpio.h")
-#include "esp_rom_gpio.h"
-#elif __has_include("esp32s3/rom/gpio.h")
-#include "esp32s3/rom/gpio.h"
-#endif
+#include "../esp_soc_compat.h"
 
 namespace capture_backend_esp32s3 {
 

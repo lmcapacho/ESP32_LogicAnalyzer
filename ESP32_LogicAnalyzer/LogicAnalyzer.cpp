@@ -5,58 +5,31 @@
 #include "hal/esp32s3/capture_backend_esp32s3.h"
 #endif
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-#if __has_include("soc/i2s_struct.h")
-#include "soc/i2s_struct.h"
-#elif __has_include("esp32/soc/i2s_struct.h")
-#include "esp32/soc/i2s_struct.h"
-#elif __has_include("esp32s3/soc/i2s_struct.h")
-#include "esp32s3/soc/i2s_struct.h"
-#endif
-#if __has_include("esp32/rom/gpio.h")
-#include "esp32/rom/gpio.h"
-#elif __has_include("esp32s3/rom/gpio.h")
-#include "esp32s3/rom/gpio.h"
-#elif __has_include("esp_rom_gpio.h")
-#include "esp_rom_gpio.h"
-#endif
-#if __has_include("soc/io_mux_reg.h")
-#include "soc/io_mux_reg.h"
-#elif __has_include("esp32/soc/io_mux_reg.h")
-#include "esp32/soc/io_mux_reg.h"
-#elif __has_include("esp32s3/soc/io_mux_reg.h")
-#include "esp32s3/soc/io_mux_reg.h"
-#endif
-#if __has_include("soc/gpio_periph.h")
-#include "soc/gpio_periph.h"
-#elif __has_include("esp32/soc/gpio_periph.h")
-#include "esp32/soc/gpio_periph.h"
-#elif __has_include("esp32s3/soc/gpio_periph.h")
-#include "esp32s3/soc/gpio_periph.h"
-#endif
+#include "hal/esp_soc_compat.h"
 #endif
 
-esp_err_t LogicAnalyzer::hal_dma_desc_init_bridge(void *ctx, int raw_byte_size)
+esp_err_t LogicAnalyzer::hal_esp32_dma_desc_init_bridge(void *ctx, int raw_byte_size)
 {
-    return static_cast<LogicAnalyzer *>(ctx)->dma_desc_init(raw_byte_size);
+    return static_cast<LogicAnalyzer *>(ctx)->esp32_dma_desc_init(raw_byte_size);
 }
 
-void LogicAnalyzer::hal_i2s_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg)
+void LogicAnalyzer::hal_esp32_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg)
 {
-    static_cast<LogicAnalyzer *>(ctx)->i2s_parallel_setup(cfg);
+    static_cast<LogicAnalyzer *>(ctx)->esp32_parallel_setup(cfg);
 }
 
-void LogicAnalyzer::hal_start_dma_capture_bridge(void *ctx)
+void LogicAnalyzer::hal_esp32_start_capture_bridge(void *ctx)
 {
-    static_cast<LogicAnalyzer *>(ctx)->start_dma_capture();
+    static_cast<LogicAnalyzer *>(ctx)->esp32_start_dma_capture();
 }
 
 void LogicAnalyzer::begin()
 {
     capture_backend::Hooks backend_hooks = {};
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-    backend_hooks.allocate_state = &LogicAnalyzer::hal_dma_desc_init_bridge;
-    backend_hooks.configure_bus = &LogicAnalyzer::hal_i2s_parallel_setup_bridge;
-    backend_hooks.arm_capture = &LogicAnalyzer::hal_start_dma_capture_bridge;
+    backend_hooks.allocate_state = &LogicAnalyzer::hal_esp32_dma_desc_init_bridge;
+    backend_hooks.configure_bus = &LogicAnalyzer::hal_esp32_parallel_setup_bridge;
+    backend_hooks.arm_capture = &LogicAnalyzer::hal_esp32_start_capture_bridge;
 #endif
 
     i2s_parallel_config_t cfg;

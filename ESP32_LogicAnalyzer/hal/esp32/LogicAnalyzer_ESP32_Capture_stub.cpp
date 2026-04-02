@@ -1,25 +1,25 @@
-#include "LogicAnalyzer.h"
+#include "../../LogicAnalyzer.h"
 
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
 
-void LogicAnalyzer::start_dma_capture(void) {}
+void LogicAnalyzer::esp32_start_dma_capture(void) {}
 
-void LogicAnalyzer::i2s_isr(void *arg)
+void LogicAnalyzer::esp32_capture_isr(void *arg)
 {
     (void)arg;
 }
 
 void LogicAnalyzer::dma_desc_deinit() {}
 
-esp_err_t LogicAnalyzer::dma_desc_init(int raw_byte_size)
+esp_err_t LogicAnalyzer::esp32_dma_desc_init(int raw_byte_size)
 {
     (void)raw_byte_size;
     return ESP_ERR_NOT_SUPPORTED;
 }
 
-void LogicAnalyzer::i2s_conf_reset() {}
+void LogicAnalyzer::esp32_capture_conf_reset() {}
 
-void LogicAnalyzer::i2s_parallel_setup(const i2s_parallel_config_t *cfg)
+void LogicAnalyzer::esp32_parallel_setup(const i2s_parallel_config_t *cfg)
 {
     (void)cfg;
 }

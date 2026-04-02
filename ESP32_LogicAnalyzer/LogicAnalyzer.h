@@ -1,15 +1,7 @@
 #include <Arduino.h>
 #include "esp_err.h"
 #include "esp_intr_alloc.h"
-#if __has_include("soc/lldesc.h")
-#include "soc/lldesc.h"
-#elif __has_include("esp_private/dma_types.h")
-#include "esp_private/dma_types.h"
-#elif __has_include("hal/dma_types.h")
-#include "hal/dma_types.h"
-#else
-#include "rom/lldesc.h"
-#endif
+#include "hal/esp_soc_compat.h"
 
 #include "LogicAnalyzerConfig.h"
 
@@ -147,7 +139,6 @@ void set_logic_state(void *ctx, logic_analyzer_state_t *state);
 uint32_t get_capture_byte_count(void *ctx);
 }
 
-void IRAM_ATTR i2s_wrapper(void *arg);
 
 class LogicAnalyzer
 {
@@ -158,7 +149,7 @@ class LogicAnalyzer
 public:
     void begin(void);
     void handleCommand(int cmd);
-    void i2s_isr(void *arg);
+    void esp32_capture_isr(void *arg);
 
 private:
     uint8_t channels_to_read = 3;
@@ -206,18 +197,18 @@ private:
     void enable_out_clock(uint32_t freq_in_hz);
     
     void dma_desc_deinit();
-    esp_err_t dma_desc_init(int raw_byte_size);
-    void start_dma_capture(void);
+    esp_err_t esp32_dma_desc_init(int raw_byte_size);
+    void esp32_start_dma_capture(void);
     void dma_serializer(dma_elem_t *dma_buffer);
     void dmabuff_compresser_ch1(uint8_t *dma_buffer);
     void dmabuff_compresser_ch2(uint8_t *dma_buffer);
 
-    void i2s_conf_reset();
-    void i2s_parallel_setup(const i2s_parallel_config_t *cfg);
+    void esp32_capture_conf_reset();
+    void esp32_parallel_setup(const i2s_parallel_config_t *cfg);
 
-    static esp_err_t hal_dma_desc_init_bridge(void *ctx, int raw_byte_size);
-    static void hal_i2s_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg);
-    static void hal_start_dma_capture_bridge(void *ctx);
+    static esp_err_t hal_esp32_dma_desc_init_bridge(void *ctx, int raw_byte_size);
+    static void hal_esp32_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg);
+    static void hal_esp32_start_capture_bridge(void *ctx);
 
     bool rle_init(void);
     void fast_rle_block_encode_asm_8bit_ch1(uint8_t *dma_buffer, int sample_size);

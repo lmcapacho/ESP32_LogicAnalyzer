@@ -1,38 +1,13 @@
-#include "LogicAnalyzer.h"
-#include "hal/i2s_dma_hal.h"
+#include "../../LogicAnalyzer.h"
+#include "../i2s_dma_hal.h"
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-#if __has_include("soc/i2s_struct.h")
-#include "soc/i2s_struct.h"
-#elif __has_include("esp32/soc/i2s_struct.h")
-#include "esp32/soc/i2s_struct.h"
-#elif __has_include("esp32s3/soc/i2s_struct.h")
-#include "esp32s3/soc/i2s_struct.h"
-#endif
 #include "driver/periph_ctrl.h"
-#if __has_include("esp32/rom/gpio.h")
-#include "esp32/rom/gpio.h"
-#elif __has_include("esp32s3/rom/gpio.h")
-#include "esp32s3/rom/gpio.h"
-#elif __has_include("esp_rom_gpio.h")
-#include "esp_rom_gpio.h"
-#endif
-#if __has_include("soc/io_mux_reg.h")
-#include "soc/io_mux_reg.h"
-#elif __has_include("esp32/soc/io_mux_reg.h")
-#include "esp32/soc/io_mux_reg.h"
-#elif __has_include("esp32s3/soc/io_mux_reg.h")
-#include "esp32s3/soc/io_mux_reg.h"
-#endif
-#if __has_include("soc/gpio_periph.h")
-#include "soc/gpio_periph.h"
-#elif __has_include("esp32/soc/gpio_periph.h")
-#include "esp32/soc/gpio_periph.h"
-#elif __has_include("esp32s3/soc/gpio_periph.h")
-#include "esp32s3/soc/gpio_periph.h"
-#endif
+#include "../esp_soc_compat.h"
 
-void LogicAnalyzer::start_dma_capture(void)
+extern void IRAM_ATTR esp32_capture_isr_wrapper(void *arg);
+
+void LogicAnalyzer::esp32_start_dma_capture(void)
 {
     s_state->dma_done = false;
     s_state->dma_desc_cur = 0;
@@ -46,7 +21,7 @@ void LogicAnalyzer::start_dma_capture(void)
         time_debug_indice_dma[i] = time_debug_indice_rle[i] = 0;
 
     ESP_ERROR_CHECK(esp_intr_disable(s_state->i2s_intr_handle));
-    i2s_conf_reset();
+    esp32_capture_conf_reset();
 
     I2S0.in_link.addr = (uint32_t)&s_state->dma_desc[0];
     I2S0.in_link.start = 1;
@@ -90,7 +65,7 @@ void LogicAnalyzer::start_dma_capture(void)
     // I2S0.conf.rx_start = 1;
 }
 
-void LogicAnalyzer::i2s_isr(void *arg)
+void LogicAnalyzer::esp32_capture_isr(void *arg)
 {
     if (trigger == 0)
     {
@@ -183,7 +158,7 @@ void LogicAnalyzer::i2s_isr(void *arg)
                 ESP_LOGD(TAG, "Break due rle_buff fill: %d\r\n", (RLE_BUFFER_SIZE - (rle_buff_p - rle_buff)));
                 I2S0.int_ena.in_suc_eof = 1;
                 esp_intr_disable(s_state->i2s_intr_handle);
-                i2s_conf_reset();
+                esp32_capture_conf_reset();
                 I2S0.conf.rx_start = 0;
                 s_state->dma_done = true;
             }
@@ -213,7 +188,7 @@ void LogicAnalyzer::i2s_isr(void *arg)
 
             // s_state->dma_desc_cur=0;
             esp_intr_disable(s_state->i2s_intr_handle);
-            i2s_conf_reset();
+            esp32_capture_conf_reset();
             I2S0.conf.rx_start = 0;
             s_state->dma_done = true;
         }
@@ -235,7 +210,7 @@ void LogicAnalyzer::dma_desc_deinit()
     free(s_state->dma_desc);
 }
 
-esp_err_t LogicAnalyzer::dma_desc_init(int raw_byte_size)
+esp_err_t LogicAnalyzer::esp32_dma_desc_init(int raw_byte_size)
 {
     ESP_LOGD(TAG, "Buffer Total (for DMA): %d bytes", raw_byte_size);
     esp_err_t err = i2s_dma_hal::allocate_dma_state_buffers(&s_state, raw_byte_size);
@@ -249,7 +224,7 @@ esp_err_t LogicAnalyzer::dma_desc_init(int raw_byte_size)
     return err;
 }
 
-void LogicAnalyzer::i2s_conf_reset()
+void LogicAnalyzer::esp32_capture_conf_reset()
 {
     // Toggle some reset bits in LC_CONF register
     I2S0.lc_conf.in_rst = 1;
@@ -273,7 +248,7 @@ void LogicAnalyzer::i2s_conf_reset()
     }
 }
 
-void LogicAnalyzer::i2s_parallel_setup(const i2s_parallel_config_t *cfg)
+void LogicAnalyzer::esp32_parallel_setup(const i2s_parallel_config_t *cfg)
 {
 
     // Figure out which signal numbers to use for routing
@@ -316,7 +291,7 @@ void LogicAnalyzer::i2s_parallel_setup(const i2s_parallel_config_t *cfg)
     // Initialize I2S dev
     //  Toggle some reset bits in LC_CONF register
     //  Toggle some reset bits in CONF register
-    i2s_conf_reset();
+    esp32_capture_conf_reset();
 
     I2S0.conf.rx_slave_mod = 1; // Enable slave mode (sampling clock is external)
     I2S0.conf2.val = 0;         // Enable LCD mode
@@ -381,7 +356,7 @@ void LogicAnalyzer::i2s_parallel_setup(const i2s_parallel_config_t *cfg)
     s_state->dma_received_count = 0;
     s_state->dma_filtered_count = 0;
     // esp_intr_disable(s_state->i2s_intr_handle);
-    //  i2s_conf_reset();
+    //  esp32_capture_conf_reset();
 
     ESP_LOGD(TAG, "dma_sample_count: %d", s_state->dma_sample_count);
     I2S0.rx_eof_num = s_state->dma_sample_count;
@@ -394,7 +369,7 @@ void LogicAnalyzer::i2s_parallel_setup(const i2s_parallel_config_t *cfg)
     // Setup I2S DMA Interrupt
     esp_err_t err = esp_intr_alloc(ETS_I2S0_INTR_SOURCE,
                                    ESP_INTR_FLAG_INTRDISABLED | ESP_INTR_FLAG_LEVEL1 | ESP_INTR_FLAG_IRAM,
-                                   &i2s_wrapper, NULL, &s_state->i2s_intr_handle);
+                                   &esp32_capture_isr_wrapper, NULL, &s_state->i2s_intr_handle);
 
     // Enable the Interrupt
     // ESP_ERROR_CHECK(esp_intr_enable(s_state->i2s_intr_handle));

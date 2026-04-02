@@ -44,7 +44,3 @@ void loop()
   }
 }
 
-void IRAM_ATTR i2s_wrapper(void *arg)
-{
-  esp32la.i2s_isr(arg);
-}

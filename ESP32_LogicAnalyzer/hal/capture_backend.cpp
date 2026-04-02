@@ -8,13 +8,7 @@
 #endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
-#if __has_include("soc/i2s_struct.h")
-#include "soc/i2s_struct.h"
-#elif __has_include("esp32/soc/i2s_struct.h")
-#include "esp32/soc/i2s_struct.h"
-#elif __has_include("esp32s3/soc/i2s_struct.h")
-#include "esp32s3/soc/i2s_struct.h"
-#endif
+#include "esp_soc_compat.h"
 #endif
 
 namespace capture_backend {
