@@ -4,7 +4,7 @@
 #define TAG "esp32la"
 
 // Uncomment to enable debug output (uses Serial_Debug_Port)
-//#define _DEBUG_MODE_
+#define _DEBUG_MODE_
 
 // ========================================
 // OLS Port and Serial Debug Configuration

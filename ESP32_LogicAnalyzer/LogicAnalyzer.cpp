@@ -1,6 +1,9 @@
 #include "LogicAnalyzer.h"
 #include "hal/i2s_dma_hal.h"
 #include "hal/capture_backend.h"
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+#include "hal/esp32s3/capture_backend_esp32s3.h"
+#endif
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #if __has_include("soc/i2s_struct.h")
 #include "soc/i2s_struct.h"
@@ -97,7 +100,7 @@ void LogicAnalyzer::begin()
     cfg.gpio_bus[14] = CH14_PIN;
     cfg.gpio_bus[15] = CH15_PIN;
     cfg.gpio_clk_out = CLK_OUT; // Used for LedC output
-    cfg.gpio_clk_in = CLK_IN;   // Used for XCK input from LedC
+    cfg.gpio_clk_in = CLK_OUT;   // ESP32-S3 native backend uses one pin for CAM_CLK and CAM_PCLK
 
     // GPIO 20,24,28,29,30,31 results bootloop
 
@@ -109,7 +112,7 @@ void LogicAnalyzer::begin()
     // fill_dma_desc( bufdesc );
     capture_backend::InitConfig backend_cfg = {};
     backend_cfg.ctx = this;
-    backend_cfg.gpio_clk_in = CLK_IN;
+    backend_cfg.gpio_clk_in = CLK_OUT;
     backend_cfg.bits = I2S_PARALLEL_BITS_16;
     backend_cfg.parallel = &cfg;
     backend_cfg.raw_byte_size = CAPTURE_SIZE;
@@ -123,6 +126,7 @@ void LogicAnalyzer::begin()
         capture_backend_ready = false;
         return;
     }
+
 }
 
 void LogicAnalyzer::handleCommand(int cmdByte)
@@ -203,7 +207,9 @@ void LogicAnalyzer::handleCommand(int cmdByte)
         divider += cmdBytes[1];
         divider = divider << 8;
         divider += cmdBytes[0];
+#if !defined(CONFIG_IDF_TARGET_ESP32S3)
         setupDelay();
+#endif
         break;
     case SUMP_SET_READ_DELAY_COUNT:
         getCmd(cmdBytes);
@@ -326,16 +332,43 @@ void LogicAnalyzer::captureMilli()
     Serial_Debug_Port.printf("FreeHeap 64 Byte :%u\r\n", heap_caps_get_largest_free_block(64));
     Serial_Debug_Port.printf("Triger Values 0x%X\r\n", trigger_values);
     Serial_Debug_Port.printf("Triger        0x%X\r\n", trigger);
-    Serial_Debug_Port.printf("Running on CORE #%d\r\n", xPortGetCoreID());
-    Serial_Debug_Port.printf("Reading %d Samples\r\n", readCount);
 #endif
     digitalWrite(LED_PIN, HIGH);
+
 
     ESP_LOGD(TAG, "dma_sample_count: %d", s_state->dma_sample_count);
     rle_init();
 
     const auto capture_result = capture_backend::capture(this, 2000);
-    (void)capture_result;
+#if defined(CONFIG_IDF_TARGET_ESP32S3) && defined(_DEBUG_MODE_)
+    const auto snap = capture_backend_esp32s3::debug_snapshot();
+    if (s_state && s_state->dma_buf && s_state->dma_buf[0])
+    {
+        uint8_t *raw = reinterpret_cast<uint8_t *>(s_state->dma_buf[0]);
+        Serial_Debug_Port.printf(
+            "S3RUN done=%u desc=%u ready=%u eof=%u last=0x%08lX first=0x%08lX buf=%02X %02X %02X %02X %02X %02X %02X %02X\r\n",
+            capture_result.done ? 1 : 0,
+            static_cast<unsigned>(capture_result.completed_desc_count),
+            snap.dma_ready ? 1 : 0,
+            static_cast<unsigned>(snap.eof_count),
+            static_cast<unsigned long>(snap.last_eof_desc),
+            static_cast<unsigned long>(snap.last_first_word),
+            raw[0], raw[1], raw[2], raw[3], raw[4], raw[5], raw[6], raw[7]);
+        Serial_Debug_Port.flush();
+    }
+    else
+    {
+        Serial_Debug_Port.printf(
+            "S3RUN done=%u desc=%u ready=%u eof=%u last=0x%08lX first=0x%08lX buf=NA\r\n",
+            capture_result.done ? 1 : 0,
+            static_cast<unsigned>(capture_result.completed_desc_count),
+            snap.dma_ready ? 1 : 0,
+            static_cast<unsigned>(snap.eof_count),
+            static_cast<unsigned long>(snap.last_eof_desc),
+            static_cast<unsigned long>(snap.last_first_word));
+        Serial_Debug_Port.flush();
+    }
+#endif
 
     yield();
 
