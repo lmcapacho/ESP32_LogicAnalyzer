@@ -5,7 +5,7 @@ struct logic_analyzer_state_t;
 
 #include "esp_err.h"
 
-namespace i2s_dma_hal {
+namespace capture_backend_bridge {
 
 struct Config {
     int gpio_clk_in;
@@ -34,4 +34,4 @@ void set_logic_state(void *ctx, logic_analyzer_state_t *state);
 uint32_t get_capture_byte_count(void *ctx);
 esp_err_t allocate_dma_state_buffers(logic_analyzer_state_t **state, int raw_byte_size);
 
-} // namespace i2s_dma_hal
+} // namespace capture_backend_bridge

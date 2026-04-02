@@ -1,4 +1,4 @@
-#include "i2s_dma_hal.h"
+#include "capture_backend_bridge.h"
 #include "../LogicAnalyzer.h"
 #include <assert.h>
 #include <stdlib.h>
@@ -10,7 +10,7 @@
 #include "esp32s3/capture_backend_esp32s3.h"
 #endif
 
-namespace i2s_dma_hal {
+namespace capture_backend_bridge {
 
 static bool s_initialized = false;
 static void *s_legacy_ctx = nullptr;
@@ -187,4 +187,4 @@ esp_err_t allocate_dma_state_buffers(logic_analyzer_state_t **state, int raw_byt
     return ESP_OK;
 }
 
-} // namespace i2s_dma_hal
+} // namespace capture_backend_bridge

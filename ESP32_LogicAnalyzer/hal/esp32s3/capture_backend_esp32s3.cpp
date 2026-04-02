@@ -39,7 +39,7 @@ struct dma_descriptor_align8_s {
 };
 static_assert(sizeof(dmadesc_t) == 16, "ESP32-S3 DMA descriptor must be 16 bytes");
 
-i2s_dma_hal::Config s_cfg = {};
+capture_backend_bridge::Config s_cfg = {};
 bool s_cfg_valid = false;
 bool s_warned_not_supported = false;
 
@@ -357,7 +357,7 @@ static void start_dma_capture_s3(size_t capture_bytes)
     route_cam_control_start();
 }
 
-bool init(const i2s_dma_hal::Config &cfg)
+bool init(const capture_backend_bridge::Config &cfg)
 {
     s_cfg = cfg;
     s_cfg_valid = true;

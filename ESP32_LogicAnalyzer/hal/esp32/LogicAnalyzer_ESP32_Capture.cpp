@@ -1,5 +1,5 @@
 #include "../../LogicAnalyzer.h"
-#include "../i2s_dma_hal.h"
+#include "../capture_backend_bridge.h"
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "driver/periph_ctrl.h"
@@ -213,7 +213,7 @@ void LogicAnalyzer::dma_desc_deinit()
 esp_err_t LogicAnalyzer::esp32_dma_desc_init(int raw_byte_size)
 {
     ESP_LOGD(TAG, "Buffer Total (for DMA): %d bytes", raw_byte_size);
-    esp_err_t err = i2s_dma_hal::allocate_dma_state_buffers(&s_state, raw_byte_size);
+    esp_err_t err = capture_backend_bridge::allocate_dma_state_buffers(&s_state, raw_byte_size);
     if (err != ESP_OK)
         return err;
 

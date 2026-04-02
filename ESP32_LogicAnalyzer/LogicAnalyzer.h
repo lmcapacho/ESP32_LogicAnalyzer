@@ -133,7 +133,7 @@ typedef struct logic_analyzer_state_t
     //    TaskHandle_t dma_filter_task;
 } logic_analyzer_state_t;
 
-namespace i2s_dma_hal {
+namespace capture_backend_bridge {
 logic_analyzer_state_t *get_logic_state(void *ctx);
 void set_logic_state(void *ctx, logic_analyzer_state_t *state);
 uint32_t get_capture_byte_count(void *ctx);
@@ -142,9 +142,9 @@ uint32_t get_capture_byte_count(void *ctx);
 
 class LogicAnalyzer
 {
-    friend logic_analyzer_state_t *i2s_dma_hal::get_logic_state(void *ctx);
-    friend void i2s_dma_hal::set_logic_state(void *ctx, logic_analyzer_state_t *state);
-    friend uint32_t i2s_dma_hal::get_capture_byte_count(void *ctx);
+    friend logic_analyzer_state_t *capture_backend_bridge::get_logic_state(void *ctx);
+    friend void capture_backend_bridge::set_logic_state(void *ctx, logic_analyzer_state_t *state);
+    friend uint32_t capture_backend_bridge::get_capture_byte_count(void *ctx);
 
 public:
     void begin(void);

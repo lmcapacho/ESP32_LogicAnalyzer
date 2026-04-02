@@ -2,7 +2,7 @@
 
 namespace capture_backend_esp32 {
 
-bool init(const i2s_dma_hal::Config &cfg)
+bool init(const capture_backend_bridge::Config &cfg)
 {
     (void)cfg;
     return true;

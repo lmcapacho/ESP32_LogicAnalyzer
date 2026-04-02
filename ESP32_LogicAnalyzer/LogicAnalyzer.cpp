@@ -1,5 +1,5 @@
 #include "LogicAnalyzer.h"
-#include "hal/i2s_dma_hal.h"
+#include "hal/capture_backend_bridge.h"
 #include "hal/capture_backend.h"
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "hal/esp32s3/capture_backend_esp32s3.h"

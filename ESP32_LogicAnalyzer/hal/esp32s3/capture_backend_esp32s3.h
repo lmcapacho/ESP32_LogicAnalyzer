@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../i2s_dma_hal.h"
+#include "../capture_backend_bridge.h"
 #include <stddef.h>
 
 struct i2s_parallel_config_t;
@@ -19,7 +19,7 @@ struct DebugSnapshot {
     uint32_t last_first_word;
 };
 
-bool init(const i2s_dma_hal::Config &cfg);
+bool init(const capture_backend_bridge::Config &cfg);
 void start();
 void stop();
 bool configure(const i2s_parallel_config_t *cfg, int raw_byte_size);
