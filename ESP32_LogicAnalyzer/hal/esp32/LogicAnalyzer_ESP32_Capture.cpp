@@ -248,7 +248,7 @@ void LogicAnalyzer::esp32_capture_conf_reset()
     }
 }
 
-void LogicAnalyzer::esp32_parallel_setup(const i2s_parallel_config_t *cfg)
+void LogicAnalyzer::esp32_parallel_setup(const capture_config_t *cfg)
 {
 
     // Figure out which signal numbers to use for routing
@@ -348,8 +348,8 @@ void LogicAnalyzer::esp32_parallel_setup(const i2s_parallel_config_t *cfg)
     // dev->clkm_conf.clkm_div_num=3; // datasheet says this must be 2 or greater (but lower values seem to work)
 
     // Allocate DMA descriptors
-    i2s_state[0] = (i2s_parallel_state_t *)malloc(sizeof(i2s_parallel_state_t));
-    i2s_parallel_state_t *st = i2s_state[0];
+    i2s_state[0] = (capture_bus_state_t *)malloc(sizeof(capture_bus_state_t));
+    capture_bus_state_t *st = i2s_state[0];
 
     s_state->dma_done = false;
     s_state->dma_desc_cur = 0;
@@ -377,7 +377,7 @@ void LogicAnalyzer::esp32_parallel_setup(const i2s_parallel_config_t *cfg)
     //  I2S0.conf.rx_start = 1;
 }
 
-void LogicAnalyzer::dma_serializer(dma_elem_t *dma_buffer)
+void LogicAnalyzer::dma_serializer(capture_dma_elem_t *dma_buffer)
 {
     // 00,s1,00,s2,00,s3,00,s4
     for (int i = 0; i < s_state->dma_buf_width / 4; i++)
@@ -409,7 +409,7 @@ void LogicAnalyzer::dmabuff_compresser_ch2(uint8_t *dma_buffer)
 }
 
 // Calculate the amount of dma descs needed for a buffer desc
-int calc_needed_dma_descs_for(i2s_parallel_buffer_desc_t *desc)
+int calc_needed_dma_descs_for(capture_buffer_desc_t *desc)
 {
     int ret = (desc->size + DMA_MAX - 1) / DMA_MAX;
     return ret;

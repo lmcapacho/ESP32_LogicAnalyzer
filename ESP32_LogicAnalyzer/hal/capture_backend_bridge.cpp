@@ -76,7 +76,7 @@ esp_err_t dma_desc_init(int raw_byte_size)
     return s_legacy_ops.dma_desc_init(s_legacy_ctx, raw_byte_size);
 }
 
-void i2s_parallel_setup(const i2s_parallel_config_t *cfg)
+void i2s_parallel_setup(const capture_config_t *cfg)
 {
     if (!s_legacy_ops.i2s_parallel_setup)
         return;
@@ -130,8 +130,8 @@ esp_err_t allocate_dma_state_buffers(logic_analyzer_state_t **state, int raw_byt
     new_state->dma_sample_per_desc = 1000;
     new_state->dma_desc_count = dma_desc_count;
 
-    new_state->dma_buf = static_cast<dma_elem_t **>(heap_caps_malloc(
-        sizeof(dma_elem_t *) * dma_desc_count, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    new_state->dma_buf = static_cast<capture_dma_elem_t **>(heap_caps_malloc(
+        sizeof(capture_dma_elem_t *) * dma_desc_count, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     if (!new_state->dma_buf)
     {
         free(new_state);
@@ -150,7 +150,7 @@ esp_err_t allocate_dma_state_buffers(logic_analyzer_state_t **state, int raw_byt
     size_t dma_sample_count = 0;
     for (size_t i = 0; i < dma_desc_count; ++i)
     {
-        dma_elem_t *buf = static_cast<dma_elem_t *>(heap_caps_malloc(
+        capture_dma_elem_t *buf = static_cast<capture_dma_elem_t *>(heap_caps_malloc(
             buf_size, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
         if (!buf)
         {

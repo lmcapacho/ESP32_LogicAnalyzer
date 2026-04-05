@@ -1,6 +1,6 @@
 #pragma once
 
-struct i2s_parallel_config_t;
+struct capture_config_t;
 struct logic_analyzer_state_t;
 
 #include "esp_err.h"
@@ -19,14 +19,14 @@ void stop();
 
 struct LegacyOps {
     esp_err_t (*dma_desc_init)(void *ctx, int raw_byte_size);
-    void (*i2s_parallel_setup)(void *ctx, const i2s_parallel_config_t *cfg);
+    void (*i2s_parallel_setup)(void *ctx, const capture_config_t *cfg);
     void (*start_dma_capture)(void *ctx);
 };
 
 void bind_legacy_ops(void *ctx, const LegacyOps &ops);
 void bind_legacy_context(void *ctx);
 esp_err_t dma_desc_init(int raw_byte_size);
-void i2s_parallel_setup(const i2s_parallel_config_t *cfg);
+void i2s_parallel_setup(const capture_config_t *cfg);
 void start_dma_capture();
 
 logic_analyzer_state_t *get_logic_state(void *ctx);

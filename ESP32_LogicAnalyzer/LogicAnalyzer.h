@@ -5,7 +5,7 @@
 
 #include "LogicAnalyzerConfig.h"
 
-#define I2S_PARALLEL_BITS I2S_PARALLEL_BITS_16
+#define CAPTURE_BUS_BITS_DEFAULT CAPTURE_BUS_BITS_16
 #define DMA_MAX (4096 - 4)
 
 /* XON/XOFF are not supported. */
@@ -45,10 +45,10 @@
 
 typedef enum
 {
-    I2S_PARALLEL_BITS_8 = 8,
-    I2S_PARALLEL_BITS_16 = 16,
-    I2S_PARALLEL_BITS_32 = 32,
-} i2s_parallel_cfg_bits_t;
+    CAPTURE_BUS_BITS_8 = 8,
+    CAPTURE_BUS_BITS_16 = 16,
+    CAPTURE_BUS_BITS_32 = 32,
+} capture_bus_bits_t;
 
 typedef enum
 {
@@ -69,30 +69,30 @@ typedef enum
     /* camera sends byte sequence: s1, s2, s3, s4, ...
      * fifo receives: 00 s1 00 00, 00 s2 00 00, 00 s3 00 00, ...
      */
-} i2s_sampling_mode_t;
+} capture_sampling_mode_t;
 
 typedef struct
 {
     void *memory;
     size_t size;
-} i2s_parallel_buffer_desc_t;
+} capture_buffer_desc_t;
 
-typedef struct i2s_parallel_config_t
+typedef struct capture_config_t
 {
     int8_t gpio_bus[16];
     int8_t gpio_clk_in;
     int8_t gpio_clk_out;
 
     int clkspeed_hz;
-    i2s_parallel_cfg_bits_t bits;
-    i2s_parallel_buffer_desc_t *buf;
-} i2s_parallel_config_t;
+    capture_bus_bits_t bits;
+    capture_buffer_desc_t *buf;
+} capture_config_t;
 
 typedef struct
 {
     volatile lldesc_t *dmadesc;
     int desccount;
-} i2s_parallel_state_t;
+} capture_bus_state_t;
 
 typedef union
 {
@@ -109,12 +109,12 @@ typedef union
         uint16_t val1;
     };
     uint32_t val;
-} dma_elem_t;
+} capture_dma_elem_t;
 
 typedef struct logic_analyzer_state_t
 {
     lldesc_t *dma_desc;
-    dma_elem_t **dma_buf;
+    capture_dma_elem_t **dma_buf;
     bool dma_done;
     size_t dma_desc_count;
     size_t dma_desc_cur;
@@ -125,7 +125,7 @@ typedef struct logic_analyzer_state_t
     size_t dma_sample_count;
     size_t dma_val_per_desc;
     size_t dma_sample_per_desc;
-    i2s_sampling_mode_t sampling_mode;
+    capture_sampling_mode_t sampling_mode;
     //    dma_filter_t dma_filter;
     intr_handle_t i2s_intr_handle;
     //    QueueHandle_t data_ready;
@@ -154,7 +154,7 @@ public:
 private:
     uint8_t channels_to_read = 3;
 
-    i2s_parallel_buffer_desc_t bufdesc;
+    capture_buffer_desc_t bufdesc;
 
     int8_t rle_process = -1;
     uint8_t rle_buff[RLE_BUFFER_SIZE];
@@ -163,7 +163,7 @@ private:
     uint8_t rle_sample_counter;
     uint32_t rle_total_sample_counter;
     uint8_t rle_value_holder;
-    i2s_parallel_state_t *i2s_state[2] = {NULL, NULL};
+    capture_bus_state_t *i2s_state[2] = {NULL, NULL};
     logic_analyzer_state_t *s_state;
     bool capture_backend_ready = true;
 
@@ -199,15 +199,15 @@ private:
     void dma_desc_deinit();
     esp_err_t esp32_dma_desc_init(int raw_byte_size);
     void esp32_start_dma_capture(void);
-    void dma_serializer(dma_elem_t *dma_buffer);
+    void dma_serializer(capture_dma_elem_t *dma_buffer);
     void dmabuff_compresser_ch1(uint8_t *dma_buffer);
     void dmabuff_compresser_ch2(uint8_t *dma_buffer);
 
     void esp32_capture_conf_reset();
-    void esp32_parallel_setup(const i2s_parallel_config_t *cfg);
+    void esp32_parallel_setup(const capture_config_t *cfg);
 
     static esp_err_t hal_esp32_dma_desc_init_bridge(void *ctx, int raw_byte_size);
-    static void hal_esp32_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg);
+    static void hal_esp32_parallel_setup_bridge(void *ctx, const capture_config_t *cfg);
     static void hal_esp32_start_capture_bridge(void *ctx);
 
     bool rle_init(void);
@@ -218,4 +218,4 @@ private:
 
 uint16_t buff_process_trigger_1(uint16_t *buff, int size, bool printit = true);
 uint16_t buff_process_trigger_0(uint16_t *buff, int size, bool printit = true);
-int calc_needed_dma_descs_for(i2s_parallel_buffer_desc_t *desc);
+int calc_needed_dma_descs_for(capture_buffer_desc_t *desc);

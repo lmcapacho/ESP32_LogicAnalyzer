@@ -13,7 +13,7 @@ esp_err_t LogicAnalyzer::hal_esp32_dma_desc_init_bridge(void *ctx, int raw_byte_
     return static_cast<LogicAnalyzer *>(ctx)->esp32_dma_desc_init(raw_byte_size);
 }
 
-void LogicAnalyzer::hal_esp32_parallel_setup_bridge(void *ctx, const i2s_parallel_config_t *cfg)
+void LogicAnalyzer::hal_esp32_parallel_setup_bridge(void *ctx, const capture_config_t *cfg)
 {
     static_cast<LogicAnalyzer *>(ctx)->esp32_parallel_setup(cfg);
 }
@@ -32,7 +32,7 @@ void LogicAnalyzer::begin()
     backend_hooks.arm_capture = &LogicAnalyzer::hal_esp32_start_capture_bridge;
 #endif
 
-    i2s_parallel_config_t cfg;
+    capture_config_t cfg;
 #ifdef _DEBUG_MODE_
     Serial_Debug_Port.begin(Serial_Debug_Port_Baud);
 // Using for development
@@ -77,7 +77,7 @@ void LogicAnalyzer::begin()
 
     // GPIO 20,24,28,29,30,31 results bootloop
 
-    cfg.bits = I2S_PARALLEL_BITS_16;
+    cfg.bits = CAPTURE_BUS_BITS_16;
     cfg.clkspeed_hz = 2 * 1000 * 1000; // resulting pixel clock = 1MHz
     cfg.buf = &bufdesc;
 
@@ -86,7 +86,7 @@ void LogicAnalyzer::begin()
     capture_backend::InitConfig backend_cfg = {};
     backend_cfg.ctx = this;
     backend_cfg.gpio_clk_in = CLK_OUT;
-    backend_cfg.bits = I2S_PARALLEL_BITS_16;
+    backend_cfg.bits = CAPTURE_BUS_BITS_16;
     backend_cfg.parallel = &cfg;
     backend_cfg.raw_byte_size = CAPTURE_SIZE;
 #if defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -279,7 +279,7 @@ void LogicAnalyzer::get_metadata()
     // OLS_Port.write((uint8_t)0x08);//8
     // OLS_Port.write((uint8_t)0x10);//16
     // OLS_Port.write((uint8_t)0x20);//32
-    OLS_Port.write((uint8_t)I2S_PARALLEL_BITS);
+    OLS_Port.write((uint8_t)CAPTURE_BUS_BITS_DEFAULT);
 
     /* protocol version (2) */
     OLS_Port.write((uint8_t)0x41);
@@ -382,12 +382,12 @@ void LogicAnalyzer::captureMilli()
     if (filled_sample_offset-- == 0)
         filled_sample_offset = filled_full_sample_offset;
 
-    dma_elem_t cur;
+    capture_dma_elem_t cur;
 
     /*
       Serial_Debug_Port.printf("\r\nRAW BlocX \r\n");
       for ( int i = 0 ; i < 100 ; i++ ){
-         cur = (dma_elem_t&)s_state->dma_buf[0][i];
+         cur = (capture_dma_elem_t&)s_state->dma_buf[0][i];
          Serial_Debug_Port.printf("0x%X, ", cur.sample2);
          Serial_Debug_Port.printf("0x%X, ", cur.sample1);
        }

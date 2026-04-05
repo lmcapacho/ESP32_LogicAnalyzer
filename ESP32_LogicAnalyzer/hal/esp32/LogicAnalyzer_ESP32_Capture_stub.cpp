@@ -19,12 +19,12 @@ esp_err_t LogicAnalyzer::esp32_dma_desc_init(int raw_byte_size)
 
 void LogicAnalyzer::esp32_capture_conf_reset() {}
 
-void LogicAnalyzer::esp32_parallel_setup(const i2s_parallel_config_t *cfg)
+void LogicAnalyzer::esp32_parallel_setup(const capture_config_t *cfg)
 {
     (void)cfg;
 }
 
-void LogicAnalyzer::dma_serializer(dma_elem_t *dma_buffer)
+void LogicAnalyzer::dma_serializer(capture_dma_elem_t *dma_buffer)
 {
     (void)dma_buffer;
 }
@@ -39,7 +39,7 @@ void LogicAnalyzer::dmabuff_compresser_ch2(uint8_t *dma_buffer)
     (void)dma_buffer;
 }
 
-int calc_needed_dma_descs_for(i2s_parallel_buffer_desc_t *desc)
+int calc_needed_dma_descs_for(capture_buffer_desc_t *desc)
 {
     (void)desc;
     return 0;

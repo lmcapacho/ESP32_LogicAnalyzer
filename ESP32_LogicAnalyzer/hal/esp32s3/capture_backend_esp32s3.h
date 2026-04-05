@@ -3,7 +3,7 @@
 #include "../capture_backend_bridge.h"
 #include <stddef.h>
 
-struct i2s_parallel_config_t;
+struct capture_config_t;
 
 namespace capture_backend_esp32s3 {
 
@@ -22,7 +22,7 @@ struct DebugSnapshot {
 bool init(const capture_backend_bridge::Config &cfg);
 void start();
 void stop();
-bool configure(const i2s_parallel_config_t *cfg, int raw_byte_size);
+bool configure(const capture_config_t *cfg, int raw_byte_size);
 Result capture(size_t capture_bytes, uint32_t timeout_ms);
 void copy_to_logic_state(logic_analyzer_state_t *state);
 DebugSnapshot debug_snapshot();

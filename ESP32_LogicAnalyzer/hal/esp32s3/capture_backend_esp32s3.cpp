@@ -258,7 +258,7 @@ void update_capture_state_from_regs()
 }
 } // namespace
 
-static void i2s_parallel_setup_s3(const i2s_parallel_config_t *cfg)
+static void i2s_parallel_setup_s3(const capture_config_t *cfg)
 {
     if (!cfg)
         return;
@@ -382,7 +382,7 @@ void stop()
     }
 }
 
-bool configure(const i2s_parallel_config_t *cfg, int raw_byte_size)
+bool configure(const capture_config_t *cfg, int raw_byte_size)
 {
     if (!cfg || !s_cfg_valid)
         return false;
